@@ -1,12 +1,45 @@
 // Paste your deployed Google Apps Script Web App URL here:
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykX4o72pPfgO7h4EYY3mk0dwssrG_8plN_9uWA0shgMWTro-uLXWyt4bqDkMmICGxEhQ/exec";
 
+// Security Passcode Settings
+const DEFAULT_PASSCODE = "fromwombtothetomb";
+
 let classroomData = {};
 let activeClass = "";
 let turtles = [];
-let foodPellets = [];
 
-// Setup Canvas
+// Lock Screen Logic
+document.addEventListener("DOMContentLoaded", () => {
+  const overlay = document.getElementById("passwordLockOverlay");
+  const input = document.getElementById("passcodeInput");
+  const unlockBtn = document.getElementById("unlockBtn");
+  const relockBtn = document.getElementById("relockBtn");
+  const errorMsg = document.getElementById("lockErrorMessage");
+
+  function attemptUnlock() {
+    if (input.value.trim() === DEFAULT_PASSCODE) {
+      overlay.style.display = "none";
+      errorMsg.style.display = "none";
+      input.value = "";
+    } else {
+      errorMsg.style.display = "block";
+      input.value = "";
+      input.focus();
+    }
+  }
+
+  unlockBtn.addEventListener("click", attemptUnlock);
+  input.addEventListener("keyup", (e) => {
+    if (e.key === "Enter") attemptUnlock();
+  });
+
+  relockBtn.addEventListener("click", () => {
+    overlay.style.display = "flex";
+    input.focus();
+  });
+});
+
+// Canvas Setup
 const canvas = document.getElementById("aquariumCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -28,10 +61,10 @@ class Turtle {
     this.vy = (Math.random() - 0.5) * 1.5;
   }
 
-  // Get Evolution Level & Visual Attributes
+  // Evolution Level Calculation
   getStage() {
-    if (this.points >= 300) return 4; // Mythic Ocean Leviathan
-    if (this.points >= 200) return 3; // Cyber Mystic Turtle
+    if (this.points >= 300) return 4; // Mythic Leviathan
+    if (this.points >= 200) return 3; // Cyber Mystic
     if (this.points >= 100) return 2; // Armored Turtle
     return 1;                         // Hatchling
   }
@@ -44,7 +77,6 @@ class Turtle {
     this.x += this.vx;
     this.y += this.vy;
 
-    // Bounce off walls
     if (this.x < 50 || this.x > canvas.width - 50) this.vx *= -1;
     if (this.y < 50 || this.y > canvas.height - 50) this.vy *= -1;
   }
@@ -56,19 +88,18 @@ class Turtle {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Shell Color based on Evolution
+    // Shell Colors by Evolution
     let shellColor = "#2e7d32"; // Hatchling (Green)
     if (stage === 2) shellColor = "#0288d1"; // Armored (Blue)
     if (stage === 3) shellColor = "#7b1fa2"; // Cyber Mystic (Purple)
     if (stage === 4) shellColor = "#ffd700"; // Mythic (Gold)
 
-    // Glow Effect for Evolution Stage 3 & 4
     if (stage >= 3) {
       ctx.shadowBlur = 18;
       ctx.shadowColor = shellColor;
     }
 
-    // Main Shell
+    // Shell Body
     ctx.beginPath();
     ctx.arc(0, 0, size, 0, Math.PI * 2);
     ctx.fillStyle = shellColor;
@@ -82,7 +113,7 @@ class Turtle {
     ctx.fillRect(-size - 6, -size / 2, 8, 14);
     ctx.fillRect(size - 2, -size / 2, 8, 14);
 
-    // Student Label
+    // Name Label
     ctx.shadowBlur = 0;
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 12px sans-serif";
@@ -93,7 +124,7 @@ class Turtle {
   }
 }
 
-// --- App Functions ---
+// --- Application Logic ---
 async function fetchSheetData() {
   try {
     const res = await fetch(APPS_SCRIPT_URL);
@@ -145,9 +176,10 @@ function renderStudentFeedList(students) {
     card.className = "student-card";
     card.innerHTML = `
       <span><b>${student.name}</b> (${student.points} pts)</span>
-      <div>
+      <div class="feed-btn-group">
+        <button class="feed-btn" onclick="feedStudent('${student.name}', 5)">+5</button>
         <button class="feed-btn" onclick="feedStudent('${student.name}', 10)">+10</button>
-        <button class="feed-btn" onclick="feedStudent('${student.name}', 50)">+50</button>
+        <button class="feed-btn" onclick="feedStudent('${student.name}', 25)">+25</button>
       </div>
     `;
     list.appendChild(card);
@@ -155,7 +187,6 @@ function renderStudentFeedList(students) {
 }
 
 async function feedStudent(studentName, points) {
-  // Update UI & Canvas dynamically
   const turtle = turtles.find(t => t.name === studentName);
   if (turtle) turtle.points += points;
 
@@ -164,7 +195,6 @@ async function feedStudent(studentName, points) {
 
   renderStudentFeedList(classroomData[activeClass]);
 
-  // Persist points to Google Sheets
   await fetch(APPS_SCRIPT_URL, {
     method: "POST",
     body: JSON.stringify({
@@ -176,15 +206,15 @@ async function feedStudent(studentName, points) {
   });
 }
 
-// --- Event Listeners ---
+// Controls Listeners
 document.getElementById("createClassBtn").addEventListener("click", async () => {
-  const nameInput = document.getElementById("newClassInput");
-  const className = nameInput.value.trim();
+  const input = document.getElementById("newClassInput");
+  const className = input.value.trim();
   if (!className) return;
 
   activeClass = className;
   classroomData[className] = [];
-  nameInput.value = "";
+  input.value = "";
 
   updateClassDropdown();
 
@@ -220,7 +250,7 @@ document.getElementById("classDropdown").addEventListener("change", (e) => {
 
 document.getElementById("syncSheetBtn").addEventListener("click", fetchSheetData);
 
-// --- Animation Loop ---
+// Canvas Animation Loop
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   turtles.forEach(turtle => {
@@ -230,6 +260,6 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-// Start App
+// Initialize Application
 fetchSheetData();
 animate();
