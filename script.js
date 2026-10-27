@@ -1,22 +1,33 @@
+function initIcons() {
+  if (typeof lucide !== 'undefined' && lucide.createIcons) {
+    lucide.createIcons();
+  }
+}
 // Paste your deployed Google Apps Script Web App URL here:
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykX4o72pPfgO7h4EYY3mk0dwssrG_8plN_9uWA0shgMWTro-uLXWyt4bqDkMmICGxEhQ/exec";
 
 // Security Passcode Settings
 const DEFAULT_PASSCODE = "fromwombtothetomb";
 
+// Safe Lucide Icon Loader
+
+
 let classroomData = {};
 let activeClass = "";
 let turtles = [];
 let particles = [];
+let floatingTexts = [];
+let foodPellets = [];
 
-// Lock Screen & Responsive Controls Toggle
+// App Event Listeners Setup
 document.addEventListener("DOMContentLoaded", () => {
+  initIcons();
+
   const overlay = document.getElementById("passwordLockOverlay");
   const input = document.getElementById("passcodeInput");
   const unlockBtn = document.getElementById("unlockBtn");
   const relockBtn = document.getElementById("relockBtn");
   const errorMsg = document.getElementById("lockErrorMessage");
-  
   const sidebar = document.getElementById("appSidebar");
   const toggleSidebarBtn = document.getElementById("toggleSidebarBtn");
 
@@ -49,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Canvas Setup
+// Canvas Engine Setup
 const canvas = document.getElementById("aquariumCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -61,16 +72,16 @@ window.addEventListener("resize", resizeCanvas);
 window.addEventListener("orientationchange", resizeCanvas);
 resizeCanvas();
 
-// --- Particle Trail System ---
+// Visual Particle Class
 class Particle {
   constructor(x, y, color) {
     this.x = x;
     this.y = y;
     this.color = color;
-    this.size = Math.random() * 3 + 1;
+    this.size = Math.random() * 3.5 + 1.5;
     this.alpha = 1;
-    this.vx = (Math.random() - 0.5) * 0.8;
-    this.vy = (Math.random() - 0.5) * 0.8;
+    this.vx = (Math.random() - 0.5) * 1.2;
+    this.vy = (Math.random() - 0.5) * 1.2;
   }
   update() {
     this.x += this.vx;
@@ -88,58 +99,107 @@ class Particle {
   }
 }
 
-// --- Turtle Class ---
+// Floating Score Text
+class FloatingText {
+  constructor(x, y, text) {
+    this.x = x;
+    this.y = y;
+    this.text = text;
+    this.alpha = 1;
+    this.vy = -1.5;
+  }
+  update() {
+    this.y += this.vy;
+    this.alpha -= 0.015;
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, this.alpha);
+    ctx.fillStyle = "#ffd54f";
+    ctx.font = "bold 18px Fredoka, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(this.text, this.x, this.y);
+    ctx.restore();
+  }
+}
+
+// Food Drop Particle Class
+class FoodPellet {
+  constructor(targetX, targetY) {
+    this.x = targetX + (Math.random() - 0.5) * 40;
+    this.y = 0;
+    this.targetY = targetY;
+    this.speed = 3 + Math.random() * 2;
+    this.size = 5;
+    this.reached = false;
+  }
+  update() {
+    if (this.y < this.targetY) {
+      this.y += this.speed;
+    } else {
+      this.reached = true;
+    }
+  }
+  draw() {
+    if (!this.reached) {
+      ctx.save();
+      ctx.fillStyle = "#ff7043";
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+// Evolving Turtle Vector Class
 class Turtle {
   constructor(name, points) {
     this.name = name;
     this.points = points;
 
-    // Spawn safely inside canvas bounds
     const padding = 100;
     this.x = Math.random() * Math.max(100, canvas.width - padding * 2) + padding;
     this.y = Math.random() * Math.max(100, canvas.height - padding * 2) + padding;
     
-    this.speed = 1.0 + Math.random() * 0.6;
+    this.speed = 0.9 + Math.random() * 0.5;
     this.angle = Math.random() * Math.PI * 2;
     this.flipperSwimTimer = Math.random() * 100;
   }
 
   getStage() {
-    if (this.points < 100) return 1;  // Hatchling
-    if (this.points < 200) return 2;  // Armored Cyan
-    if (this.points < 350) return 3;  // Mystic Purple
-    if (this.points < 500) return 4;  // Cosmic Golden
-    if (this.points < 750) return 5;  // Leviathan
-    return 5 + Math.floor((this.points - 750) / 250);
+    if (this.points < 100) return 1;  
+    if (this.points < 250) return 2;  
+    if (this.points < 500) return 3;  
+    if (this.points < 1000) return 4; 
+    if (this.points < 2000) return 5; 
+    return 5 + Math.floor((this.points - 2000) / 1000); 
   }
 
   getSize() {
     const scaleFactor = canvas.width < 600 ? 0.75 : 1;
-    const baseSize = 22 + Math.sqrt(this.points) * 2.5; 
-    return Math.min(baseSize, 110) * scaleFactor;
+    const baseSize = 22 + Math.sqrt(this.points) * 2.8; 
+    return Math.min(baseSize, 140) * scaleFactor;
   }
 
   getStageTitle() {
     const stage = this.getStage();
     if (stage === 1) return "Hatchling";
-    if (stage === 2) return "Armored Shell";
-    if (stage === 3) return "Mystic Cyber";
-    if (stage === 4) return "Cosmic Leviathan";
-    if (stage === 5) return "Ocean Dragon";
+    if (stage === 2) return "Armored Sentinel";
+    if (stage === 3) return "Cyber Mystic";
+    if (stage === 4) return "Solar Leviathan";
+    if (stage === 5) return "Abyssal God";
     return `Celestial God T-${stage - 5}`;
   }
 
   update() {
-    // Gentle angle random changes
-    this.angle += (Math.random() - 0.5) * 0.08;
+    this.angle += (Math.random() - 0.5) * 0.06;
 
-    // Movement
     this.x += Math.cos(this.angle) * this.speed;
     this.y += Math.sin(this.angle) * this.speed;
-    this.flipperSwimTimer += 0.08;
+    this.flipperSwimTimer += 0.07;
 
-    // FIXED BOUNDARY BOUNCE (Prevents turtles getting trapped in corners)
-    const margin = this.getSize() + 30;
+    const margin = this.getSize() + 40;
     
     if (this.x < margin) {
       this.x = margin;
@@ -157,9 +217,8 @@ class Turtle {
       this.angle = Math.atan2(-Math.abs(Math.sin(this.angle)), Math.cos(this.angle));
     }
 
-    // Particles for higher stages
-    if (this.getStage() >= 3 && Math.random() < 0.3) {
-      const colors = ["#80deea", "#b388ff", "#ffd54f", "#ff80ab"];
+    if (this.getStage() >= 3 && Math.random() < 0.35) {
+      const colors = ["#80deea", "#b388ff", "#ffd54f", "#ff80ab", "#00e676"];
       particles.push(new Particle(this.x, this.y, colors[this.getStage() % colors.length]));
     }
   }
@@ -167,118 +226,195 @@ class Turtle {
   draw() {
     const stage = this.getStage();
     const size = this.getSize();
-    const flipperAngle = Math.sin(this.flipperSwimTimer) * 0.35;
+    const flipperSwing = Math.sin(this.flipperSwimTimer) * 0.4;
 
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle + Math.PI / 2);
 
-    let primaryColor = "#2e7d32"; 
-    let secondaryColor = "#81c784"; 
-    let auraColor = "rgba(76, 175, 80, 0.4)";
+    let shellBase = "#2e7d32";
+    let shellPlate = "#81c784";
+    let skinColor = "#1b5e20";
+    let auraGlow = "rgba(76, 175, 80, 0.4)";
 
-    if (stage === 2) { primaryColor = "#00838f"; secondaryColor = "#4dd0e1"; auraColor = "rgba(0, 188, 212, 0.5)"; }
-    if (stage === 3) { primaryColor = "#6a1b9a"; secondaryColor = "#ba68c8"; auraColor = "rgba(156, 39, 176, 0.6)"; }
-    if (stage === 4) { primaryColor = "#f57f17"; secondaryColor = "#fff176"; auraColor = "rgba(255, 215, 0, 0.7)"; }
-    if (stage >= 5) { primaryColor = "#c62828"; secondaryColor = "#ff8a80"; auraColor = "rgba(255, 82, 82, 0.8)"; }
-
-    if (stage >= 2) {
-      ctx.shadowBlur = 12 + stage * 3;
-      ctx.shadowColor = auraColor;
+    if (stage === 2) { 
+      shellBase = "#006064"; shellPlate = "#4dd0e1"; skinColor = "#004d40"; auraGlow = "rgba(0, 188, 212, 0.5)";
+    } else if (stage === 3) { 
+      shellBase = "#4a148c"; shellPlate = "#e040fb"; skinColor = "#311b92"; auraGlow = "rgba(156, 39, 176, 0.6)";
+    } else if (stage === 4) { 
+      shellBase = "#e65100"; shellPlate = "#ffd54f"; skinColor = "#bf360c"; auraGlow = "rgba(255, 193, 7, 0.7)";
+    } else if (stage >= 5) { 
+      shellBase = "#880e4f"; shellPlate = "#ff80ab"; skinColor = "#4a0072"; auraGlow = "rgba(255, 64, 129, 0.85)";
     }
 
-    // Flippers
-    ctx.fillStyle = primaryColor;
-    
-    // Front Flippers
-    ctx.save();
-    ctx.translate(-size * 0.55, -size * 0.25);
-    ctx.rotate(-0.5 + flipperAngle);
-    ctx.beginPath();
-    ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    if (stage >= 2) {
+      ctx.shadowBlur = 14 + stage * 4;
+      ctx.shadowColor = auraGlow;
+    }
 
-    ctx.save();
-    ctx.translate(size * 0.55, -size * 0.25);
-    ctx.rotate(0.5 - flipperAngle);
+    ctx.fillStyle = skinColor;
+    
+    // Stage Specific Flippers
+    if (stage === 1) { 
+      ctx.save();
+      ctx.translate(-size * 0.55, -size * 0.25);
+      ctx.rotate(-0.5 + flipperSwing);
+      ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(size * 0.55, -size * 0.25);
+      ctx.rotate(0.5 - flipperSwing);
+      ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    } else if (stage === 2) { 
+      ctx.save();
+      ctx.translate(-size * 0.6, -size * 0.2);
+      ctx.rotate(-0.6 + flipperSwing);
+      ctx.beginPath();
+      ctx.moveTo(0, 0); ctx.lineTo(-size * 0.6, -size * 0.2); ctx.lineTo(-size * 0.4, size * 0.2);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(size * 0.6, -size * 0.2);
+      ctx.rotate(0.6 - flipperSwing);
+      ctx.beginPath();
+      ctx.moveTo(0, 0); ctx.lineTo(size * 0.6, -size * 0.2); ctx.lineTo(size * 0.4, size * 0.2);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    } else { 
+      ctx.save();
+      ctx.translate(-size * 0.65, -size * 0.25);
+      ctx.rotate(-0.5 + flipperSwing);
+      ctx.beginPath(); ctx.ellipse(0, 0, size * 0.6, size * 0.22, -0.2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(size * 0.65, -size * 0.25);
+      ctx.rotate(0.5 - flipperSwing);
+      ctx.beginPath(); ctx.ellipse(0, 0, size * 0.6, size * 0.22, 0.2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // Tail
     ctx.beginPath();
-    ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2);
+    ctx.moveTo(-size * 0.1, size * 0.75);
+    ctx.lineTo(0, size * 1.1);
+    ctx.lineTo(size * 0.1, size * 0.75);
+    ctx.closePath();
     ctx.fill();
-    ctx.restore();
 
     // Head
-    ctx.fillStyle = primaryColor;
+    ctx.fillStyle = skinColor;
     ctx.beginPath();
-    ctx.arc(0, -size * 0.75, size * 0.3, 0, Math.PI * 2);
+    ctx.arc(0, -size * 0.75, size * 0.32, 0, Math.PI * 2);
     ctx.fill();
 
     // Eyes
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
-    ctx.arc(-size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
-    ctx.arc(size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
+    ctx.arc(-size * 0.12, -size * 0.85, size * 0.08, 0, Math.PI * 2);
+    ctx.arc(size * 0.12, -size * 0.85, size * 0.08, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#000000";
     ctx.beginPath();
-    ctx.arc(-size * 0.12, -size * 0.87, size * 0.035, 0, Math.PI * 2);
-    ctx.arc(size * 0.12, -size * 0.87, size * 0.035, 0, Math.PI * 2);
+    ctx.arc(-size * 0.12, -size * 0.87, size * 0.04, 0, Math.PI * 2);
+    ctx.arc(size * 0.12, -size * 0.87, size * 0.04, 0, Math.PI * 2);
     ctx.fill();
 
-    // Crown for Stage 4+
-    if (stage >= 4) {
-      ctx.fillStyle = "#ffd700";
+    // Head Ornaments & Armor
+    if (stage === 2) { 
+      ctx.fillStyle = shellPlate;
       ctx.beginPath();
-      ctx.moveTo(-size * 0.18, -size * 1.0);
-      ctx.lineTo(0, -size * 1.25);
-      ctx.lineTo(size * 0.18, -size * 1.0);
+      ctx.arc(0, -size * 0.85, size * 0.2, Math.PI, 0);
+      ctx.fill();
+    } else if (stage === 3) { 
+      ctx.strokeStyle = shellPlate;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.1, -size * 0.9); ctx.lineTo(-size * 0.3, -size * 1.2);
+      ctx.moveTo(size * 0.1, -size * 0.9); ctx.lineTo(size * 0.3, -size * 1.2);
+      ctx.stroke();
+    } else if (stage === 4) { 
+      ctx.fillStyle = "#ffd54f";
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.25, -size * 0.95);
+      ctx.lineTo(0, -size * 1.35);
+      ctx.lineTo(size * 0.25, -size * 0.95);
       ctx.closePath();
+      ctx.fill();
+    } else if (stage >= 5) { 
+      ctx.fillStyle = "#ff80ab";
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.15, -size * 0.9); ctx.lineTo(-size * 0.4, -size * 1.4); ctx.lineTo(-size * 0.05, -size * 1.0);
+      ctx.moveTo(size * 0.15, -size * 0.9); ctx.lineTo(size * 0.4, -size * 1.4); ctx.lineTo(size * 0.05, -size * 1.0);
       ctx.fill();
     }
 
-    // Shell
-    ctx.fillStyle = primaryColor;
+    // Main Shell Base
+    ctx.fillStyle = shellBase;
     ctx.beginPath();
-    ctx.ellipse(0, 0, size * 0.65, size * 0.8, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, size * 0.68, size * 0.82, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = secondaryColor;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = shellPlate;
     ctx.stroke();
 
-    // Shell Pattern
-    ctx.fillStyle = secondaryColor;
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "#020d18";
-    ctx.beginPath();
-    ctx.arc(0, -size * 0.1, size * 0.25, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    // Shell Crest Pattern
+    ctx.fillStyle = shellPlate;
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.4)";
+
+    if (stage === 1) { 
+      ctx.beginPath();
+      ctx.arc(0, -size * 0.1, size * 0.25, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+    } else if (stage === 2) { 
+      ctx.fillRect(-size * 0.3, -size * 0.4, size * 0.6, size * 0.25);
+      ctx.fillRect(-size * 0.3, 0, size * 0.6, size * 0.25);
+    } else if (stage === 3) { 
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.18, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff"; ctx.fill();
+    } else if (stage >= 4) { 
+      ctx.beginPath();
+      ctx.moveTo(0, -size * 0.45);
+      ctx.lineTo(size * 0.35, 0);
+      ctx.lineTo(0, size * 0.45);
+      ctx.lineTo(-size * 0.35, 0);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    }
 
     ctx.restore();
 
-    // Student Label
+    // Floating Name & Status Label
     ctx.save();
     ctx.shadowBlur = 0;
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 13px sans-serif";
+    ctx.font = "bold 13px Fredoka, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(`${this.name}`, this.x, this.y + size + 16);
+    ctx.fillText(`${this.name}`, this.x, this.y + size + 18);
 
-    ctx.fillStyle = secondaryColor;
-    ctx.font = "11px sans-serif";
-    ctx.fillText(`${this.getStageTitle()} • ${this.points} pts`, this.x, this.y + size + 30);
+    ctx.fillStyle = shellPlate;
+    ctx.font = "11px Fredoka, sans-serif";
+    ctx.fillText(`${this.getStageTitle()} • ${this.points} pts`, this.x, this.y + size + 32);
     ctx.restore();
   }
 }
 
-// --- Application Logic ---
+// Google Apps Script Sync Operations
 async function fetchSheetData() {
   try {
     const res = await fetch(APPS_SCRIPT_URL);
     classroomData = await res.json();
     updateClassDropdown();
   } catch (err) {
-    console.error("Failed to connect to Google Sheets:", err);
+    console.error("Failed to fetch data from Google Apps Script Web App API:", err);
   }
 }
 
@@ -324,7 +460,6 @@ function renderLeaderboard(students) {
     return;
   }
 
-  // Sort students descending by points
   const sorted = [...students].sort((a, b) => b.points - a.points);
 
   sorted.forEach((student, index) => {
@@ -366,7 +501,12 @@ function renderStudentFeedList(students) {
 
 async function feedStudent(studentName, points) {
   const turtle = turtles.find(t => t.name === studentName);
-  if (turtle) turtle.points += points;
+  if (turtle) {
+    turtle.points += points;
+    
+    floatingTexts.push(new FloatingText(turtle.x, turtle.y - turtle.getSize(), `+${points} Pts!`));
+    foodPellets.push(new FoodPellet(turtle.x, turtle.y));
+  }
 
   const student = classroomData[activeClass].find(s => s.name === studentName);
   if (student) student.points += points;
@@ -385,7 +525,7 @@ async function feedStudent(studentName, points) {
   });
 }
 
-// Event Listeners
+// User Dashboard Forms
 document.getElementById("createClassBtn").addEventListener("click", async () => {
   const input = document.getElementById("newClassInput");
   const className = input.value.trim();
@@ -429,9 +569,15 @@ document.getElementById("classDropdown").addEventListener("change", (e) => {
 
 document.getElementById("syncSheetBtn").addEventListener("click", fetchSheetData);
 
-// Animation Loop
+// Main Engine Frame Loop
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let i = foodPellets.length - 1; i >= 0; i--) {
+    foodPellets[i].update();
+    foodPellets[i].draw();
+    if (foodPellets[i].reached) foodPellets.splice(i, 1);
+  }
 
   for (let i = particles.length - 1; i >= 0; i--) {
     particles[i].update();
@@ -443,6 +589,12 @@ function animate() {
     turtle.update();
     turtle.draw();
   });
+
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    floatingTexts[i].update();
+    floatingTexts[i].draw();
+    if (floatingTexts[i].alpha <= 0) floatingTexts.splice(i, 1);
+  }
 
   requestAnimationFrame(animate);
 }
