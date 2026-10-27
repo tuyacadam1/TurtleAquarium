@@ -21,8 +21,15 @@
 
   <!-- Main Web Application -->
   <div class="aquarium-app">
+    
+    <!-- Mobile Navigation Bar Header -->
+    <header class="mobile-navbar">
+      <h2>🐢 Aquarium</h2>
+      <button id="toggleSidebarBtn" class="btn primary">☰ Controls</button>
+    </header>
+
     <!-- Sidebar Controls -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="appSidebar">
       <div class="brand">
         <h2>🐢 Turtle Aquarium</h2>
         <button id="relockBtn" class="btn danger" title="Lock Controls">🔒 Lock</button>
@@ -63,7 +70,7 @@
     <main class="aquarium-container">
       <div class="aquarium-overlay">
         <h1 id="activeClassTitle">No Classroom Selected</h1>
-        <button id="syncSheetBtn" class="btn sync">🔄 Sync Spreadsheet</button>
+        <button id="syncSheetBtn" class="btn sync">🔄 Sync</button>
       </div>
       <canvas id="aquariumCanvas"></canvas>
     </main>
