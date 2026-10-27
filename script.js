@@ -9,9 +9,6 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykX4o72pPfgO7h
 // Security Passcode Settings
 const DEFAULT_PASSCODE = "fromwombtothetomb";
 
-// Safe Lucide Icon Loader
-
-
 let classroomData = {};
 let activeClass = "";
 let turtles = [];
@@ -173,13 +170,16 @@ class Turtle {
     if (this.points < 500) return 3;  
     if (this.points < 1000) return 4; 
     if (this.points < 2000) return 5; 
-    return 5 + Math.floor((this.points - 2000) / 1000); 
+    if (this.points < 5000) return 6; 
+    if (this.points < 10000) return 7; 
+    return 7 + Math.floor((this.points - 10000) / 5000); 
   }
 
   getSize() {
     const scaleFactor = canvas.width < 600 ? 0.75 : 1;
-    const baseSize = 22 + Math.sqrt(this.points) * 2.8; 
-    return Math.min(baseSize, 140) * scaleFactor;
+    // Logarithmic curve with continuous growth beyond 1000 pts up to a cap of 240px
+    const baseSize = 22 + Math.sqrt(this.points) * 2.8 + Math.log10(Math.max(1, this.points - 1000 + 1)) * 12; 
+    return Math.min(baseSize, 240) * scaleFactor;
   }
 
   getStageTitle() {
@@ -188,8 +188,10 @@ class Turtle {
     if (stage === 2) return "Armored Sentinel";
     if (stage === 3) return "Cyber Mystic";
     if (stage === 4) return "Solar Leviathan";
-    if (stage === 5) return "Abyssal God";
-    return `Celestial God T-${stage - 5}`;
+    if (stage === 5) return "Abyssal Leviathan";
+    if (stage === 6) return "Cosmic Sovereign";
+    if (stage === 7) return "Omnipotent Entity";
+    return `Celestial Overlord Rank-${stage - 7}`;
   }
 
   update() {
@@ -217,8 +219,10 @@ class Turtle {
       this.angle = Math.atan2(-Math.abs(Math.sin(this.angle)), Math.cos(this.angle));
     }
 
-    if (this.getStage() >= 3 && Math.random() < 0.35) {
-      const colors = ["#80deea", "#b388ff", "#ffd54f", "#ff80ab", "#00e676"];
+    // Particle frequency increases as turtles reach high ranks
+    const particleChance = Math.min(0.9, 0.2 + this.getStage() * 0.1);
+    if (this.getStage() >= 3 && Math.random() < particleChance) {
+      const colors = ["#80deea", "#b388ff", "#ffd54f", "#ff80ab", "#00e676", "#76ff03", "#ff3d00", "#00e5ff"];
       particles.push(new Particle(this.x, this.y, colors[this.getStage() % colors.length]));
     }
   }
@@ -243,12 +247,21 @@ class Turtle {
       shellBase = "#4a148c"; shellPlate = "#e040fb"; skinColor = "#311b92"; auraGlow = "rgba(156, 39, 176, 0.6)";
     } else if (stage === 4) { 
       shellBase = "#e65100"; shellPlate = "#ffd54f"; skinColor = "#bf360c"; auraGlow = "rgba(255, 193, 7, 0.7)";
-    } else if (stage >= 5) { 
+    } else if (stage === 5) { 
       shellBase = "#880e4f"; shellPlate = "#ff80ab"; skinColor = "#4a0072"; auraGlow = "rgba(255, 64, 129, 0.85)";
+    } else if (stage === 6) { 
+      shellBase = "#1a237e"; shellPlate = "#00e5ff"; skinColor = "#0d47a1"; auraGlow = "rgba(0, 229, 255, 0.9)";
+    } else if (stage >= 7) { 
+      // Dynamic pulsing colors for end-game ranks
+      const hue = (Date.now() / 20 + stage * 45) % 360;
+      shellBase = `hsl(${hue}, 80%, 20%)`;
+      shellPlate = `hsl(${hue}, 100%, 70%)`;
+      skinColor = `hsl(${hue}, 90%, 12%)`;
+      auraGlow = `hsla(${hue}, 100%, 60%, 0.95)`;
     }
 
     if (stage >= 2) {
-      ctx.shadowBlur = 14 + stage * 4;
+      ctx.shadowBlur = 14 + stage * 5;
       ctx.shadowColor = auraGlow;
     }
 
@@ -323,7 +336,7 @@ class Turtle {
     ctx.arc(size * 0.12, -size * 0.87, size * 0.04, 0, Math.PI * 2);
     ctx.fill();
 
-    // Head Ornaments & Armor
+    // Head Ornaments & Crown Evolutions
     if (stage === 2) { 
       ctx.fillStyle = shellPlate;
       ctx.beginPath();
@@ -344,11 +357,26 @@ class Turtle {
       ctx.lineTo(size * 0.25, -size * 0.95);
       ctx.closePath();
       ctx.fill();
-    } else if (stage >= 5) { 
+    } else if (stage === 5) { 
       ctx.fillStyle = "#ff80ab";
       ctx.beginPath();
       ctx.moveTo(-size * 0.15, -size * 0.9); ctx.lineTo(-size * 0.4, -size * 1.4); ctx.lineTo(-size * 0.05, -size * 1.0);
       ctx.moveTo(size * 0.15, -size * 0.9); ctx.lineTo(size * 0.4, -size * 1.4); ctx.lineTo(size * 0.05, -size * 1.0);
+      ctx.fill();
+    } else if (stage >= 6) {
+      // Celestial Halo & Spire Crown
+      ctx.strokeStyle = shellPlate;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, -size * 1.1, size * 0.35, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = shellPlate;
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.2, -size * 0.95);
+      ctx.lineTo(0, -size * 1.5);
+      ctx.lineTo(size * 0.2, -size * 0.95);
+      ctx.closePath();
       ctx.fill();
     }
 
@@ -380,12 +408,26 @@ class Turtle {
       ctx.beginPath();
       ctx.arc(0, 0, size * 0.18, 0, Math.PI * 2);
       ctx.fillStyle = "#ffffff"; ctx.fill();
-    } else if (stage >= 4) { 
+    } else if (stage === 4) { 
       ctx.beginPath();
       ctx.moveTo(0, -size * 0.45);
       ctx.lineTo(size * 0.35, 0);
       ctx.lineTo(0, size * 0.45);
       ctx.lineTo(-size * 0.35, 0);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    } else if (stage >= 5) {
+      // Complex geometry & expanding star emblem
+      const pointsCount = Math.min(12, 5 + (stage - 5) * 2);
+      ctx.beginPath();
+      for (let i = 0; i < pointsCount; i++) {
+        const rad = (i * Math.PI * 2) / pointsCount;
+        const r = i % 2 === 0 ? size * 0.45 : size * 0.22;
+        const px = Math.cos(rad) * r;
+        const py = Math.sin(rad) * r;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
       ctx.closePath();
       ctx.fill(); ctx.stroke();
     }
