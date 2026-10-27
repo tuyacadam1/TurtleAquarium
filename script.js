@@ -1,5 +1,5 @@
 // Paste your deployed Google Apps Script Web App URL here:
-const APPS_SCRIPT_URL = "YOUR_DEPLOYED_WEB_APP_URL_HERE";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykX4o72pPfgO7h4EYY3mk0dwssrG_8plN_9uWA0shgMWTro-uLXWyt4bqDkMmICGxEhQ/exec";
 
 let classroomData = {};
 let activeClass = "";
