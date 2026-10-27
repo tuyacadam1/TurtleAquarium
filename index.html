@@ -1,60 +1,58 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Classroom Aquarium</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="aquarium-app">
-    <!-- Sidebar Controls -->
-    <aside class="sidebar">
-      <div class="brand">
-        <h2>🐢 Turtle Aquarium</h2>
-      </div>
-
-      <!-- Step 1: Create Classroom -->
-      <div class="control-box">
-        <h3>1. Create Classroom</h3>
-        <div class="input-group">
-          <input type="text" id="newClassInput" placeholder="Class Name (e.g. Grade 5 A)" />
-          <button id="createClassBtn" class="btn primary">+ Create</button>
-        </div>
-      </div>
-
-      <!-- Step 2: Classroom Selection -->
-      <div class="control-box">
-        <h3>2. Active Classroom</h3>
-        <select id="classDropdown">
-          <option value="">Select a classroom...</option>
-        </select>
-      </div>
-
-      <!-- Step 3: Add Students -->
-      <div class="control-box">
-        <h3>3. Add Students</h3>
-        <textarea id="bulkStudentInput" placeholder="Enter student names (one per line)..."></textarea>
-        <button id="addStudentsBtn" class="btn success">+ Add Turtles to Tank</button>
-      </div>
-
-      <!-- Step 4: Quick Feed List -->
-      <div class="control-box student-feed-panel">
-        <h3>4. Feed Turtles</h3>
-        <div id="studentList" class="student-list"></div>
-      </div>
-    </aside>
-
-    <!-- Interactive Canvas Aquarium -->
-    <main class="aquarium-container">
-      <div class="aquarium-overlay">
-        <h1 id="activeClassTitle">No Classroom Selected</h1>
-        <button id="syncSheetBtn" class="btn sync">🔄 Sync Spreadsheet</button>
-      </div>
-      <canvas id="aquariumCanvas"></canvas>
-    </main>
+<!-- Password Lock Screen Overlay -->
+<div id="passwordLockOverlay" style="
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #020d18;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: sans-serif;
+  color: #fff;
+">
+  <div style="
+    background: #081a2b;
+    padding: 30px 40px;
+    border-radius: 12px;
+    border: 2px solid #103454;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    max-width: 360px;
+    width: 90%;
+  ">
+    <h2 style="margin-bottom: 8px; color: #4dd0e1;">🐢 Classroom Aquarium</h2>
+    <p style="margin-bottom: 20px; font-size: 14px; color: #a0aec0;">Enter passcode to access admin controls:</p>
+    
+    <input type="password" id="passcodeInput" placeholder="Enter password..." style="
+      width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #1a4875;
+      background: #061524;
+      color: #fff;
+      font-size: 16px;
+      margin-bottom: 12px;
+      text-align: center;
+      box-sizing: border-box;
+    " />
+    
+    <button id="unlockBtn" style="
+      width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      border: none;
+      background: #0288d1;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+    ">Unlock Aquarium</button>
+    
+    <p id="lockErrorMessage" style="color: #ff5252; font-size: 13px; margin-top: 12px; display: none;">
+      Incorrect password. Please try again!
+    </p>
   </div>
-
-  <script src="script.js"></script>
-</body>
-</html>
+</div>
