@@ -12,6 +12,62 @@ body {
   overflow: hidden;
 }
 
+/* Security Lock Overlay */
+#passwordLockOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(2, 13, 24, 0.96);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.lock-card {
+  background: #081a2b;
+  padding: 32px 40px;
+  border-radius: 12px;
+  border: 2px solid #103454;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  max-width: 380px;
+  width: 90%;
+}
+
+.lock-card h2 {
+  color: #4dd0e1;
+  margin-bottom: 8px;
+}
+
+.lock-card p {
+  color: #a0aec0;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.lock-card input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #1a4875;
+  background: #061524;
+  color: #fff;
+  font-size: 16px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+#lockErrorMessage {
+  color: #ff5252;
+  font-size: 13px;
+  margin-top: 12px;
+  display: none;
+}
+
+/* Main App Layout */
 .aquarium-app {
   display: flex;
   height: 100vh;
@@ -29,10 +85,15 @@ body {
   overflow-y: auto;
 }
 
+.brand {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .brand h2 {
   color: #4dd0e1;
-  font-size: 22px;
-  margin-bottom: 5px;
+  font-size: 20px;
 }
 
 .control-box {
@@ -46,7 +107,7 @@ body {
 }
 
 .control-box h3 {
-  font-size: 14px;
+  font-size: 13px;
   color: #80deea;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -74,7 +135,7 @@ textarea {
 
 /* Buttons */
 .btn {
-  padding: 8px 14px;
+  padding: 8px 12px;
   border: none;
   border-radius: 6px;
   font-weight: bold;
@@ -86,12 +147,13 @@ textarea {
 .btn.primary { background: #0288d1; color: white; }
 .btn.success { background: #00897b; color: white; }
 .btn.sync { background: #8e24aa; color: white; }
+.btn.danger { background: #d32f2f; color: white; font-size: 12px; }
 
-/* Student Directory Feed List */
+/* Student Directory */
 .student-feed-panel { flex: 1; }
 
 .student-list {
-  max-height: 280px;
+  max-height: 260px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -108,18 +170,22 @@ textarea {
   border: 1px solid #133a61;
 }
 
+.feed-btn-group {
+  display: flex;
+  gap: 4px;
+}
+
 .feed-btn {
   background: #26a69a;
   color: white;
   border: none;
-  padding: 4px 8px;
+  padding: 4px 6px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
-  margin-left: 4px;
 }
 
-/* Aquarium Canvas Area */
+/* Canvas Area */
 .aquarium-container {
   flex: 1;
   position: relative;
