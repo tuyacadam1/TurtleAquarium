@@ -88,38 +88,35 @@ class Particle {
   }
 }
 
-// --- Enhanced Infinite Turtle Engine ---
+// --- Turtle Class ---
 class Turtle {
   constructor(name, points) {
     this.name = name;
     this.points = points;
-    this.x = Math.random() * (canvas.width - 160) + 80;
-    this.y = Math.random() * (canvas.height - 160) + 80;
+
+    // Spawn safely inside canvas bounds
+    const padding = 100;
+    this.x = Math.random() * Math.max(100, canvas.width - padding * 2) + padding;
+    this.y = Math.random() * Math.max(100, canvas.height - padding * 2) + padding;
     
-    // Swimming Physics
-    this.speed = 1.2 + Math.random() * 0.5;
+    this.speed = 1.0 + Math.random() * 0.6;
     this.angle = Math.random() * Math.PI * 2;
-    this.targetAngle = this.angle;
     this.flipperSwimTimer = Math.random() * 100;
   }
 
-  // Infinite Stage Evolution Math
   getStage() {
     if (this.points < 100) return 1;  // Hatchling
     if (this.points < 200) return 2;  // Armored Cyan
     if (this.points < 350) return 3;  // Mystic Purple
     if (this.points < 500) return 4;  // Cosmic Golden
     if (this.points < 750) return 5;  // Leviathan
-    
-    // Infinite God Tier Scaling past 750+ (Stage 6, 7, 8...)
     return 5 + Math.floor((this.points - 750) / 250);
   }
 
-  // Dynamic Scale: Increases smoothly with points endlessly
   getSize() {
     const scaleFactor = canvas.width < 600 ? 0.75 : 1;
-    const baseSize = 24 + Math.sqrt(this.points) * 2.8; 
-    return Math.min(baseSize, 120) * scaleFactor; // Smooth non-capped scale curve
+    const baseSize = 22 + Math.sqrt(this.points) * 2.5; 
+    return Math.min(baseSize, 110) * scaleFactor;
   }
 
   getStageTitle() {
@@ -133,34 +130,37 @@ class Turtle {
   }
 
   update() {
-    // Smooth Direction Wobble
-    if (Math.random() < 0.02) {
-      this.targetAngle += (Math.random() - 0.5) * 1.2;
-    }
-    
-    // Turn smoothly towards target angle
-    this.angle += (this.targetAngle - this.angle) * 0.05;
+    // Gentle angle random changes
+    this.angle += (Math.random() - 0.5) * 0.08;
 
-    // Movement Velocity
-    const vx = Math.cos(this.angle) * this.speed;
-    const vy = Math.sin(this.angle) * this.speed;
-
-    this.x += vx;
-    this.y += vy;
+    // Movement
+    this.x += Math.cos(this.angle) * this.speed;
+    this.y += Math.sin(this.angle) * this.speed;
     this.flipperSwimTimer += 0.08;
 
-    // Boundary Bounce
-    const margin = 60;
-    if (this.x < margin) { this.x = margin; this.targetAngle = Math.PI - this.angle; }
-    if (this.x > canvas.width - margin) { this.x = canvas.width - margin; this.targetAngle = Math.PI - this.angle; }
-    if (this.y < margin) { this.y = margin; this.targetAngle = -this.angle; }
-    if (this.y > canvas.height - margin) { this.y = canvas.height - margin; this.targetAngle = -this.angle; }
+    // FIXED BOUNDARY BOUNCE (Prevents turtles getting trapped in corners)
+    const margin = this.getSize() + 30;
+    
+    if (this.x < margin) {
+      this.x = margin;
+      this.angle = Math.atan2(Math.sin(this.angle), Math.abs(Math.cos(this.angle)));
+    } else if (this.x > canvas.width - margin) {
+      this.x = canvas.width - margin;
+      this.angle = Math.atan2(Math.sin(this.angle), -Math.abs(Math.cos(this.angle)));
+    }
 
-    // Spawn Particles for Stage 3+
-    if (this.getStage() >= 3 && Math.random() < 0.4) {
+    if (this.y < margin) {
+      this.y = margin;
+      this.angle = Math.atan2(Math.abs(Math.sin(this.angle)), Math.cos(this.angle));
+    } else if (this.y > canvas.height - margin) {
+      this.y = canvas.height - margin;
+      this.angle = Math.atan2(-Math.abs(Math.sin(this.angle)), Math.cos(this.angle));
+    }
+
+    // Particles for higher stages
+    if (this.getStage() >= 3 && Math.random() < 0.3) {
       const colors = ["#80deea", "#b388ff", "#ffd54f", "#ff80ab"];
-      const c = colors[this.getStage() % colors.length];
-      particles.push(new Particle(this.x, this.y, c));
+      particles.push(new Particle(this.x, this.y, colors[this.getStage() % colors.length]));
     }
   }
 
@@ -171,9 +171,8 @@ class Turtle {
 
     ctx.save();
     ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle + Math.PI / 2); // Facing direction
+    ctx.rotate(this.angle + Math.PI / 2);
 
-    // Palette per Evolution
     let primaryColor = "#2e7d32"; 
     let secondaryColor = "#81c784"; 
     let auraColor = "rgba(76, 175, 80, 0.4)";
@@ -183,97 +182,81 @@ class Turtle {
     if (stage === 4) { primaryColor = "#f57f17"; secondaryColor = "#fff176"; auraColor = "rgba(255, 215, 0, 0.7)"; }
     if (stage >= 5) { primaryColor = "#c62828"; secondaryColor = "#ff8a80"; auraColor = "rgba(255, 82, 82, 0.8)"; }
 
-    // Aura Glow Effect for higher stages
     if (stage >= 2) {
-      ctx.shadowBlur = 12 + stage * 4;
+      ctx.shadowBlur = 12 + stage * 3;
       ctx.shadowColor = auraColor;
     }
 
-    // --- 1. Flippers (Animated Paddling) ---
+    // Flippers
     ctx.fillStyle = primaryColor;
     
-    // Front Left Flipper
+    // Front Flippers
     ctx.save();
-    ctx.translate(-size * 0.6, -size * 0.3);
+    ctx.translate(-size * 0.55, -size * 0.25);
     ctx.rotate(-0.5 + flipperAngle);
     ctx.beginPath();
-    ctx.ellipse(0, 0, size * 0.5, size * 0.2, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
-    // Front Right Flipper
     ctx.save();
-    ctx.translate(size * 0.6, -size * 0.3);
+    ctx.translate(size * 0.55, -size * 0.25);
     ctx.rotate(0.5 - flipperAngle);
     ctx.beginPath();
-    ctx.ellipse(0, 0, size * 0.5, size * 0.2, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
-    // Rear Flippers
-    ctx.fillStyle = secondaryColor;
-    ctx.beginPath();
-    ctx.ellipse(-size * 0.4, size * 0.6, size * 0.25, size * 0.12, 0.4, 0, Math.PI * 2);
-    ctx.ellipse(size * 0.4, size * 0.6, size * 0.25, size * 0.12, -0.4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // --- 2. Head & Eyes ---
+    // Head
     ctx.fillStyle = primaryColor;
     ctx.beginPath();
-    ctx.arc(0, -size * 0.8, size * 0.32, 0, Math.PI * 2);
+    ctx.arc(0, -size * 0.75, size * 0.3, 0, Math.PI * 2);
     ctx.fill();
 
     // Eyes
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
-    ctx.arc(-size * 0.15, -size * 0.9, size * 0.08, 0, Math.PI * 2);
-    ctx.arc(size * 0.15, -size * 0.9, size * 0.08, 0, Math.PI * 2);
+    ctx.arc(-size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
+    ctx.arc(size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#000000";
     ctx.beginPath();
-    ctx.arc(-size * 0.15, -size * 0.92, size * 0.04, 0, Math.PI * 2);
-    ctx.arc(size * 0.15, -size * 0.92, size * 0.04, 0, Math.PI * 2);
+    ctx.arc(-size * 0.12, -size * 0.87, size * 0.035, 0, Math.PI * 2);
+    ctx.arc(size * 0.12, -size * 0.87, size * 0.035, 0, Math.PI * 2);
     ctx.fill();
 
-    // Evolution Crown/Horns for Stage 4+
+    // Crown for Stage 4+
     if (stage >= 4) {
       ctx.fillStyle = "#ffd700";
       ctx.beginPath();
-      ctx.moveTo(-size * 0.2, -size * 1.05);
-      ctx.lineTo(0, -size * 1.3);
-      ctx.lineTo(size * 0.2, -size * 1.05);
+      ctx.moveTo(-size * 0.18, -size * 1.0);
+      ctx.lineTo(0, -size * 1.25);
+      ctx.lineTo(size * 0.18, -size * 1.0);
       ctx.closePath();
       ctx.fill();
     }
 
-    // --- 3. Shell (Main Body with Pattern Plate Grid) ---
+    // Shell
     ctx.fillStyle = primaryColor;
     ctx.beginPath();
-    ctx.ellipse(0, 0, size * 0.7, size * 0.85, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, size * 0.65, size * 0.8, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.5;
     ctx.strokeStyle = secondaryColor;
     ctx.stroke();
 
-    // Hexagonal Inner Shell Plate Patterns
+    // Shell Pattern
     ctx.fillStyle = secondaryColor;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.strokeStyle = "#020d18";
-
-    // Center Plate
     ctx.beginPath();
-    ctx.arc(0, -size * 0.1, size * 0.28, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(0, size * 0.35, size * 0.24, 0, Math.PI * 2);
+    ctx.arc(0, -size * 0.1, size * 0.25, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
     ctx.restore();
 
-    // --- 4. Floating Student Name & Stage Info Tag ---
+    // Student Label
     ctx.save();
     ctx.shadowBlur = 0;
     ctx.fillStyle = "#ffffff";
@@ -328,7 +311,38 @@ function loadClassroom(className) {
   const students = classroomData[className] || [];
   turtles = students.map(s => new Turtle(s.name, s.points));
 
+  renderLeaderboard(students);
   renderStudentFeedList(students);
+}
+
+function renderLeaderboard(students) {
+  const leaderboardList = document.getElementById("leaderboardList");
+  leaderboardList.innerHTML = "";
+
+  if (students.length === 0) {
+    leaderboardList.innerHTML = `<div class="empty-msg">No students added yet</div>`;
+    return;
+  }
+
+  // Sort students descending by points
+  const sorted = [...students].sort((a, b) => b.points - a.points);
+
+  sorted.forEach((student, index) => {
+    const item = document.createElement("div");
+    const rankClass = index < 3 ? `top-${index + 1}` : "";
+    item.className = `rank-item ${rankClass}`;
+
+    let medal = `#${index + 1}`;
+    if (index === 0) medal = "🥇";
+    if (index === 1) medal = "🥈";
+    if (index === 2) medal = "🥉";
+
+    item.innerHTML = `
+      <span><span class="rank-badge">${medal}</span> <b>${student.name}</b></span>
+      <span>${student.points} pts</span>
+    `;
+    leaderboardList.appendChild(item);
+  });
 }
 
 function renderStudentFeedList(students) {
@@ -357,6 +371,7 @@ async function feedStudent(studentName, points) {
   const student = classroomData[activeClass].find(s => s.name === studentName);
   if (student) student.points += points;
 
+  renderLeaderboard(classroomData[activeClass]);
   renderStudentFeedList(classroomData[activeClass]);
 
   await fetch(APPS_SCRIPT_URL, {
@@ -370,7 +385,7 @@ async function feedStudent(studentName, points) {
   });
 }
 
-// Control Event Listeners
+// Event Listeners
 document.getElementById("createClassBtn").addEventListener("click", async () => {
   const input = document.getElementById("newClassInput");
   const className = input.value.trim();
@@ -414,18 +429,16 @@ document.getElementById("classDropdown").addEventListener("change", (e) => {
 
 document.getElementById("syncSheetBtn").addEventListener("click", fetchSheetData);
 
-// Animation Engine Loop
+// Animation Loop
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Render Trails
   for (let i = particles.length - 1; i >= 0; i--) {
     particles[i].update();
     particles[i].draw();
     if (particles[i].alpha <= 0) particles.splice(i, 1);
   }
 
-  // Render Turtles
   turtles.forEach(turtle => {
     turtle.update();
     turtle.draw();
