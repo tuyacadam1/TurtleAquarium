@@ -70,7 +70,7 @@ body {
   display: none;
 }
 
-/* Main App Layout */
+/* Main Layout */
 .aquarium-app {
   display: flex;
   height: 100vh;
@@ -85,13 +85,13 @@ body {
 /* Sidebar */
 .sidebar {
   width: 360px;
-  min-width: 300px;
+  min-width: 310px;
   background: #081a2b;
   border-right: 2px solid #103454;
-  padding: 20px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   overflow-y: auto;
   z-index: 20;
   transition: transform 0.3s ease;
@@ -125,6 +125,56 @@ body {
   letter-spacing: 0.5px;
 }
 
+/* Leaderboard Panel Styles */
+.leaderboard-box {
+  border: 1px solid #ffb300;
+  background: #11283e;
+}
+
+.leaderboard-box h3 {
+  color: #ffd54f;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.rank-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #081a2b;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  border: 1px solid #1a3f66;
+}
+
+.rank-item.top-1 { border-color: #ffd700; background: rgba(255, 215, 0, 0.1); }
+.rank-item.top-2 { border-color: #c0c0c0; background: rgba(192, 192, 192, 0.1); }
+.rank-item.top-3 { border-color: #cd7f32; background: rgba(205, 127, 50, 0.1); }
+
+.rank-badge {
+  font-weight: bold;
+  margin-right: 6px;
+}
+
+.top-1 .rank-badge { color: #ffd700; }
+.top-2 .rank-badge { color: #c0c0c0; }
+.top-3 .rank-badge { color: #cd7f32; }
+
+.empty-msg {
+  font-size: 12px;
+  color: #78909c;
+  font-style: italic;
+  text-align: center;
+  padding: 8px;
+}
+
 .input-group {
   display: flex;
   gap: 8px;
@@ -135,19 +185,19 @@ input, select, textarea {
   background: #061524;
   border: 1px solid #1a4875;
   color: #fff;
-  padding: 10px;
+  padding: 8px 10px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 textarea {
-  height: 70px;
+  height: 60px;
   resize: vertical;
 }
 
 /* Buttons */
 .btn {
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: none;
   border-radius: 6px;
   font-weight: bold;
@@ -166,7 +216,7 @@ textarea {
 .student-feed-panel { flex: 1; }
 
 .student-list {
-  max-height: 240px;
+  max-height: 220px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -192,9 +242,9 @@ textarea {
   background: #26a69a;
   color: white;
   border: none;
-  padding: 6px 8px;
+  padding: 5px 7px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   font-weight: bold;
 }
@@ -235,7 +285,7 @@ canvas {
   background: linear-gradient(180deg, #00838f 0%, #006064 40%, #002244 100%);
 }
 
-/* Responsive Media Queries */
+/* Mobile Responsiveness */
 @media (max-width: 850px) {
   .aquarium-app {
     flex-direction: column;
@@ -251,11 +301,6 @@ canvas {
     z-index: 30;
   }
 
-  .mobile-navbar h2 {
-    font-size: 18px;
-    color: #4dd0e1;
-  }
-
   .sidebar {
     position: absolute;
     top: 57px;
@@ -263,15 +308,10 @@ canvas {
     width: 100%;
     height: calc(100vh - 57px);
     transform: translateX(-100%);
-    box-shadow: 4px 0 15px rgba(0,0,0,0.5);
   }
 
   .sidebar.open {
     transform: translateX(0);
-  }
-
-  .aquarium-overlay h1 {
-    font-size: 16px;
   }
 
   .aquarium-container {
