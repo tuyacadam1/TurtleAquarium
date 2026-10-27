@@ -1,0 +1,149 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: #020d18;
+  color: #fff;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.aquarium-app {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 360px;
+  background: #081a2b;
+  border-right: 2px solid #103454;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.brand h2 {
+  color: #4dd0e1;
+  font-size: 22px;
+  margin-bottom: 5px;
+}
+
+.control-box {
+  background: #0d253f;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #18426e;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-box h3 {
+  font-size: 14px;
+  color: #80deea;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-group {
+  display: flex;
+  gap: 8px;
+}
+
+input, select, textarea {
+  width: 100%;
+  background: #061524;
+  border: 1px solid #1a4875;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+textarea {
+  height: 80px;
+  resize: vertical;
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+}
+
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: #0288d1; color: white; }
+.btn.success { background: #00897b; color: white; }
+.btn.sync { background: #8e24aa; color: white; }
+
+/* Student Directory Feed List */
+.student-feed-panel { flex: 1; }
+
+.student-list {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.student-card {
+  background: #081a2b;
+  padding: 8px 10px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #133a61;
+}
+
+.feed-btn {
+  background: #26a69a;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+/* Aquarium Canvas Area */
+.aquarium-container {
+  flex: 1;
+  position: relative;
+}
+
+.aquarium-overlay {
+  position: absolute;
+  top: 15px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.aquarium-overlay button {
+  pointer-events: auto;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: linear-gradient(180deg, #00838f 0%, #006064 40%, #002244 100%);
+}
