@@ -1,81 +1,280 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Classroom Turtle Aquarium</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 
-  <!-- Fullscreen Security Lock Overlay -->
-  <div id="passwordLockOverlay">
-    <div class="lock-card">
-      <h2>🐢 Classroom Aquarium</h2>
-      <p>Enter passcode to access admin controls:</p>
-      <input type="password" id="passcodeInput" placeholder="Enter passcode..." />
-      <button id="unlockBtn" class="btn primary">Unlock Aquarium</button>
-      <p id="lockErrorMessage">Incorrect passcode. Try again!</p>
-    </div>
-  </div>
+body {
+  background: #020d18;
+  color: #fff;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
 
-  <!-- Main Web Application -->
-  <div class="aquarium-app">
-    
-    <!-- Mobile Navigation Bar Header -->
-    <header class="mobile-navbar">
-      <h2>🐢 Aquarium</h2>
-      <button id="toggleSidebarBtn" class="btn primary">☰ Controls</button>
-    </header>
+/* Security Lock Overlay */
+#passwordLockOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(2, 13, 24, 0.96);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
 
-    <!-- Sidebar Controls -->
-    <aside class="sidebar" id="appSidebar">
-      <div class="brand">
-        <h2>🐢 Turtle Aquarium</h2>
-        <button id="relockBtn" class="btn danger" title="Lock Controls">🔒 Lock</button>
-      </div>
+.lock-card {
+  background: #081a2b;
+  padding: 32px 24px;
+  border-radius: 12px;
+  border: 2px solid #103454;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  max-width: 380px;
+  width: 100%;
+}
 
-      <!-- Step 1: Create Classroom -->
-      <div class="control-box">
-        <h3>1. Create Classroom</h3>
-        <div class="input-group">
-          <input type="text" id="newClassInput" placeholder="e.g. Grade 5 Alpha" />
-          <button id="createClassBtn" class="btn primary">+ Create</button>
-        </div>
-      </div>
+.lock-card h2 {
+  color: #4dd0e1;
+  margin-bottom: 8px;
+  font-size: 22px;
+}
 
-      <!-- Step 2: Select Active Classroom -->
-      <div class="control-box">
-        <h3>2. Active Classroom</h3>
-        <select id="classDropdown">
-          <option value="">Loading classrooms...</option>
-        </select>
-      </div>
+.lock-card p {
+  color: #a0aec0;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
 
-      <!-- Step 3: Add Students in Bulk -->
-      <div class="control-box">
-        <h3>3. Add Students in Bulk</h3>
-        <textarea id="bulkStudentInput" placeholder="Enter student names (one per line)..."></textarea>
-        <button id="addStudentsBtn" class="btn success">+ Add Turtles to Tank</button>
-      </div>
+.lock-card input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #1a4875;
+  background: #061524;
+  color: #fff;
+  font-size: 16px;
+  margin-bottom: 12px;
+  text-align: center;
+}
 
-      <!-- Step 4: Feed Turtles -->
-      <div class="control-box student-feed-panel">
-        <h3>4. Feed Turtles</h3>
-        <div id="studentList" class="student-list"></div>
-      </div>
-    </aside>
+#lockErrorMessage {
+  color: #ff5252;
+  font-size: 13px;
+  margin-top: 12px;
+  display: none;
+}
 
-    <!-- Aquarium Viewport -->
-    <main class="aquarium-container">
-      <div class="aquarium-overlay">
-        <h1 id="activeClassTitle">No Classroom Selected</h1>
-        <button id="syncSheetBtn" class="btn sync">🔄 Sync</button>
-      </div>
-      <canvas id="aquariumCanvas"></canvas>
-    </main>
-  </div>
+/* Main App Layout */
+.aquarium-app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+}
 
-  <script src="script.js"></script>
-</body>
-</html>
+.mobile-navbar {
+  display: none;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 360px;
+  min-width: 300px;
+  background: #081a2b;
+  border-right: 2px solid #103454;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  z-index: 20;
+  transition: transform 0.3s ease;
+}
+
+.brand {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand h2 {
+  color: #4dd0e1;
+  font-size: 20px;
+}
+
+.control-box {
+  background: #0d253f;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #18426e;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-box h3 {
+  font-size: 12px;
+  color: #80deea;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-group {
+  display: flex;
+  gap: 8px;
+}
+
+input, select, textarea {
+  width: 100%;
+  background: #061524;
+  border: 1px solid #1a4875;
+  color: #fff;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+textarea {
+  height: 70px;
+  resize: vertical;
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+  white-space: nowrap;
+}
+
+.btn:active { transform: scale(0.96); }
+.btn.primary { background: #0288d1; color: white; }
+.btn.success { background: #00897b; color: white; }
+.btn.sync { background: #8e24aa; color: white; }
+.btn.danger { background: #d32f2f; color: white; font-size: 12px; }
+
+/* Student Directory */
+.student-feed-panel { flex: 1; }
+
+.student-list {
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.student-card {
+  background: #081a2b;
+  padding: 8px 10px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #133a61;
+}
+
+.feed-btn-group {
+  display: flex;
+  gap: 4px;
+}
+
+.feed-btn {
+  background: #26a69a;
+  color: white;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Canvas Area */
+.aquarium-container {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.aquarium-overlay {
+  position: absolute;
+  top: 15px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.aquarium-overlay h1 {
+  font-size: 20px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.aquarium-overlay button {
+  pointer-events: auto;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: linear-gradient(180deg, #00838f 0%, #006064 40%, #002244 100%);
+}
+
+/* Responsive Media Queries */
+@media (max-width: 850px) {
+  .aquarium-app {
+    flex-direction: column;
+  }
+
+  .mobile-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #081a2b;
+    padding: 10px 16px;
+    border-bottom: 1px solid #103454;
+    z-index: 30;
+  }
+
+  .mobile-navbar h2 {
+    font-size: 18px;
+    color: #4dd0e1;
+  }
+
+  .sidebar {
+    position: absolute;
+    top: 57px;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 57px);
+    transform: translateX(-100%);
+    box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .aquarium-overlay h1 {
+    font-size: 16px;
+  }
+
+  .aquarium-container {
+    height: calc(100vh - 57px);
+  }
+}
