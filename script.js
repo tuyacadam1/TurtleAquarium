@@ -8,13 +8,17 @@ let classroomData = {};
 let activeClass = "";
 let turtles = [];
 
-// Lock Screen Logic
+// Lock Screen & Responsive Controls Toggle
 document.addEventListener("DOMContentLoaded", () => {
   const overlay = document.getElementById("passwordLockOverlay");
   const input = document.getElementById("passcodeInput");
   const unlockBtn = document.getElementById("unlockBtn");
   const relockBtn = document.getElementById("relockBtn");
   const errorMsg = document.getElementById("lockErrorMessage");
+  
+  // Mobile Sidebar Toggle
+  const sidebar = document.getElementById("appSidebar");
+  const toggleSidebarBtn = document.getElementById("toggleSidebarBtn");
 
   function attemptUnlock() {
     if (input.value.trim() === DEFAULT_PASSCODE) {
@@ -37,9 +41,13 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay.style.display = "flex";
     input.focus();
   });
+
+  toggleSidebarBtn.addEventListener("click", () => {
+    sidebar.classList.toggle("open");
+  });
 });
 
-// Canvas Setup
+// Responsive Canvas Setup
 const canvas = document.getElementById("aquariumCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -48,6 +56,7 @@ function resizeCanvas() {
   canvas.height = canvas.parentElement.clientHeight;
 }
 window.addEventListener("resize", resizeCanvas);
+window.addEventListener("orientationchange", resizeCanvas);
 resizeCanvas();
 
 // --- Turtle Class ---
@@ -61,7 +70,6 @@ class Turtle {
     this.vy = (Math.random() - 0.5) * 1.5;
   }
 
-  // Evolution Level Calculation
   getStage() {
     if (this.points >= 300) return 4; // Mythic Leviathan
     if (this.points >= 200) return 3; // Cyber Mystic
@@ -70,15 +78,17 @@ class Turtle {
   }
 
   getSize() {
-    return 22 + this.getStage() * 10;
+    // Dynamic scale for small screens
+    const scaleFactor = canvas.width < 500 ? 0.75 : 1;
+    return (22 + this.getStage() * 10) * scaleFactor;
   }
 
   update() {
     this.x += this.vx;
     this.y += this.vy;
 
-    if (this.x < 50 || this.x > canvas.width - 50) this.vx *= -1;
-    if (this.y < 50 || this.y > canvas.height - 50) this.vy *= -1;
+    if (this.x < 30 || this.x > canvas.width - 30) this.vx *= -1;
+    if (this.y < 30 || this.y > canvas.height - 30) this.vy *= -1;
   }
 
   draw() {
@@ -88,7 +98,6 @@ class Turtle {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Shell Colors by Evolution
     let shellColor = "#2e7d32"; // Hatchling (Green)
     if (stage === 2) shellColor = "#0288d1"; // Armored (Blue)
     if (stage === 3) shellColor = "#7b1fa2"; // Cyber Mystic (Purple)
@@ -110,15 +119,15 @@ class Turtle {
 
     // Flippers
     ctx.fillStyle = "#1b5e20";
-    ctx.fillRect(-size - 6, -size / 2, 8, 14);
-    ctx.fillRect(size - 2, -size / 2, 8, 14);
+    ctx.fillRect(-size - 5, -size / 2, 6, 12);
+    ctx.fillRect(size - 1, -size / 2, 6, 12);
 
     // Name Label
     ctx.shadowBlur = 0;
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 12px sans-serif";
+    ctx.font = "bold 11px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(`${this.name} (${this.points} pts)`, 0, size + 16);
+    ctx.fillText(`${this.name} (${this.points} pts)`, 0, size + 14);
 
     ctx.restore();
   }
@@ -159,7 +168,7 @@ function updateClassDropdown() {
 
 function loadClassroom(className) {
   activeClass = className;
-  document.getElementById("activeClassTitle").textContent = `Classroom: ${className}`;
+  document.getElementById("activeClassTitle").textContent = `Class: ${className}`;
 
   const students = classroomData[className] || [];
   turtles = students.map(s => new Turtle(s.name, s.points));
