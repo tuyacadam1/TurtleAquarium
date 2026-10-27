@@ -3,48 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Classroom Turtle Aquarium</title>
+  <title>Classroom Turtle Aquarium Engine</title>
+  
+  <!-- External Resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Fullscreen Security Lock Overlay -->
+  <!-- Passcode Security Overlay -->
   <div id="passwordLockOverlay">
     <div class="lock-card">
-      <h2>🐢 Classroom Aquarium</h2>
-      <p>Enter passcode to access admin controls:</p>
-      <input type="password" id="passcodeInput" placeholder="Enter passcode..." />
-      <button id="unlockBtn" class="btn primary">Unlock Aquarium</button>
-      <p id="lockErrorMessage">Incorrect passcode. Try again!</p>
+      <h2><i data-lucide="waves"></i> Classroom Aquarium</h2>
+      <p>Enter passcode to unlock admin controls:</p>
+      <input type="password" id="passcodeInput" placeholder="Enter passcode..." autofocus />
+      <button id="unlockBtn" class="btn primary" style="width: 100%;">Unlock Dashboard</button>
+      <p id="lockErrorMessage">Incorrect passcode. Please try again!</p>
     </div>
   </div>
 
-  <!-- Main Web Application -->
+  <!-- Main Web App Layout -->
   <div class="aquarium-app">
     
-    <!-- Mobile Navigation Header -->
+    <!-- Mobile Header -->
     <header class="mobile-navbar">
-      <h2>🐢 Aquarium</h2>
+      <h2>🐢 Turtle Aquarium</h2>
       <button id="toggleSidebarBtn" class="btn primary">☰ Controls</button>
     </header>
 
-    <!-- Sidebar Controls -->
+    <!-- Sidebar Control Dashboard -->
     <aside class="sidebar" id="appSidebar">
       <div class="brand">
         <h2>🐢 Turtle Aquarium</h2>
-        <button id="relockBtn" class="btn danger" title="Lock Controls">🔒 Lock</button>
+        <button id="relockBtn" class="btn danger" title="Lock Controls"><i data-lucide="lock"></i> Lock</button>
       </div>
 
-      <!-- Step 1: Create Classroom -->
+      <!-- 1. Classroom Creation -->
       <div class="control-box">
         <h3>1. Create Classroom</h3>
         <div class="input-group">
-          <input type="text" id="newClassInput" placeholder="e.g. Grade 5 Alpha" />
+          <input type="text" id="newClassInput" placeholder="e.g. Science Section A" />
           <button id="createClassBtn" class="btn primary">+ Create</button>
         </div>
       </div>
 
-      <!-- Step 2: Select Active Classroom -->
+      <!-- 2. Active Classroom Dropdown -->
       <div class="control-box">
         <h3>2. Active Classroom</h3>
         <select id="classDropdown">
@@ -52,7 +60,7 @@
         </select>
       </div>
 
-      <!-- Leaderboard / Ranking Section -->
+      <!-- Live Leaderboard -->
       <div class="control-box leaderboard-box">
         <h3>🏆 Class Leaderboard</h3>
         <div id="leaderboardList" class="leaderboard-list">
@@ -60,14 +68,14 @@
         </div>
       </div>
 
-      <!-- Step 3: Add Students in Bulk -->
+      <!-- 3. Bulk Add Students -->
       <div class="control-box">
         <h3>3. Add Students in Bulk</h3>
         <textarea id="bulkStudentInput" placeholder="Enter student names (one per line)..."></textarea>
         <button id="addStudentsBtn" class="btn success">+ Add Turtles to Tank</button>
       </div>
 
-      <!-- Step 4: Feed Turtles -->
+      <!-- 4. Feeding Directory -->
       <div class="control-box student-feed-panel">
         <h3>4. Feed Turtles</h3>
         <div id="studentList" class="student-list"></div>
@@ -78,12 +86,13 @@
     <main class="aquarium-container">
       <div class="aquarium-overlay">
         <h1 id="activeClassTitle">No Classroom Selected</h1>
-        <button id="syncSheetBtn" class="btn sync">🔄 Sync</button>
+        <button id="syncSheetBtn" class="btn sync"><i data-lucide="refresh-cw"></i> Sync Sheets</button>
       </div>
       <canvas id="aquariumCanvas"></canvas>
     </main>
   </div>
 
+  <!-- Main Script File -->
   <script src="script.js"></script>
 </body>
 </html>
