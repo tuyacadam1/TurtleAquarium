@@ -22,7 +22,7 @@
   <!-- Main Web Application -->
   <div class="aquarium-app">
     
-    <!-- Mobile Navigation Bar Header -->
+    <!-- Mobile Navigation Header -->
     <header class="mobile-navbar">
       <h2>🐢 Aquarium</h2>
       <button id="toggleSidebarBtn" class="btn primary">☰ Controls</button>
@@ -50,6 +50,14 @@
         <select id="classDropdown">
           <option value="">Loading classrooms...</option>
         </select>
+      </div>
+
+      <!-- Leaderboard / Ranking Section -->
+      <div class="control-box leaderboard-box">
+        <h3>🏆 Class Leaderboard</h3>
+        <div id="leaderboardList" class="leaderboard-list">
+          <div class="empty-msg">No students ranked yet</div>
+        </div>
       </div>
 
       <!-- Step 3: Add Students in Bulk -->
