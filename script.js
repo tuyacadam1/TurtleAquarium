@@ -609,3 +609,78 @@ function animate() {
 
 fetchSheetData();
 animate();
+
+// Student Individual PDF Report Handler
+document.getElementById("printSingleReportBtn").addEventListener("click", () => {
+  const student = classroomData[activeTeacher][activeClass].find(s => s.name === selectedStudentForReport);
+  if (!student) return;
+
+  const printArea = document.getElementById("printableReport");
+  let rowsHtml = (student.activities || []).map(a => `
+    <tr>
+      <td style="border: 1px solid #ccc; padding: 8px;">${a.date}</td>
+      <td style="border: 1px solid #ccc; padding: 8px;">${a.activity}</td>
+      <td style="border: 1px solid #ccc; padding: 8px;">+${a.points}</td>
+    </tr>
+  `).join("");
+
+  printArea.innerHTML = `
+    <div style="padding: 20px; font-family: Arial, sans-serif; color: #000;">
+      <h1>Student Activity & Points Report</h1>
+      <h3>Teacher: ${activeTeacher} | Class: ${activeClass} | Student: ${student.name} | Total Points: ${student.totalPoints}</h3>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <thead>
+          <tr style="background: #f0f0f0;">
+            <th style="border: 1px solid #ccc; padding: 8px;">Date</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Activity Title</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Points Awarded</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+  `;
+
+  // Trigger print dialog
+  window.print();
+
+  // Reset container immediately so the UI is restored when returning/canceling
+  printArea.innerHTML = "";
+});
+
+// Classroom Summary PDF Report Handler
+document.getElementById("printClassReportBtn").addEventListener("click", () => {
+  const students = (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) ? classroomData[activeTeacher][activeClass] : [];
+  const printArea = document.getElementById("printableReport");
+
+  let rowsHtml = students.map(s => `
+    <tr>
+      <td style="border: 1px solid #ccc; padding: 8px;">${s.name}</td>
+      <td style="border: 1px solid #ccc; padding: 8px;">${s.totalPoints}</td>
+      <td style="border: 1px solid #ccc; padding: 8px;">${s.activities ? s.activities.length : 0} activities</td>
+    </tr>
+  `).join("");
+
+  printArea.innerHTML = `
+    <div style="padding: 20px; font-family: Arial, sans-serif; color: #000;">
+      <h1>Classroom Summary Report</h1>
+      <h3>Teacher: ${activeTeacher} | Class: ${activeClass} | Date: ${new Date().toLocaleDateString()}</h3>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <thead>
+          <tr style="background: #f0f0f0;">
+            <th style="border: 1px solid #ccc; padding: 8px;">Student Name</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Total Accumulated Points</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Total Activities Completed</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+  `;
+
+  // Trigger print dialog
+  window.print();
+
+  // Reset container immediately so the UI is restored when returning/canceling
+  printArea.innerHTML = "";
+});
