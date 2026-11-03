@@ -3,97 +3,140 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Classroom Turtle Aquarium Engine</title>
-  
-  <!-- External Resources -->
+  <title>Classroom Turtle Aquarium</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
-  <!-- Custom Stylesheet -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Passcode Security Overlay -->
+  <!-- Security Passcode Overlay -->
   <div id="passwordLockOverlay">
     <div class="lock-card">
-      <h2><i data-lucide="waves"></i> Classroom Aquarium</h2>
-      <p>Enter passcode to unlock admin controls:</p>
-      <input type="password" id="passcodeInput" placeholder="Enter passcode..." autofocus />
-      <button id="unlockBtn" class="btn primary" style="width: 100%;">Unlock Dashboard</button>
-      <p id="lockErrorMessage">Incorrect passcode. Please try again!</p>
+      <h2>🐢 Classroom Aquarium</h2>
+      <p>Enter passcode to access admin controls:</p>
+      <input type="password" id="passcodeInput" placeholder="Enter passcode..." />
+      <button id="unlockBtn" class="btn primary">Unlock Aquarium</button>
+      <p id="lockErrorMessage">Incorrect passcode. Try again!</p>
     </div>
   </div>
 
-  <!-- Main Web App Layout -->
+  <!-- Hidden Container for Printable PDF Export -->
+  <div id="printableReport" class="print-only"></div>
+
+  <!-- Main Application Container -->
   <div class="aquarium-app">
     
     <!-- Mobile Header -->
     <header class="mobile-navbar">
-      <h2>🐢 Turtle Aquarium</h2>
+      <h2>🐢 Aquarium</h2>
       <button id="toggleSidebarBtn" class="btn primary">☰ Controls</button>
     </header>
 
-    <!-- Sidebar Control Dashboard -->
+    <!-- Sidebar Dashboard -->
     <aside class="sidebar" id="appSidebar">
       <div class="brand">
         <h2>🐢 Turtle Aquarium</h2>
-        <button id="relockBtn" class="btn danger" title="Lock Controls"><i data-lucide="lock"></i> Lock</button>
+        <button id="relockBtn" class="btn danger" title="Lock Controls">🔒 Lock</button>
       </div>
 
-      <!-- 1. Classroom Creation -->
+      <!-- 1. Teacher Profile Selection -->
       <div class="control-box">
-        <h3>1. Create Classroom</h3>
+        <h3>1. Select or Add Teacher</h3>
         <div class="input-group">
-          <input type="text" id="newClassInput" placeholder="e.g. Science Section A" />
+          <select id="teacherDropdown"><option value="">Loading teachers...</option></select>
+        </div>
+        <div class="input-group">
+          <input type="text" id="newTeacherInput" placeholder="New Teacher Name..." />
+          <button id="createTeacherBtn" class="btn primary">+ Add</button>
+        </div>
+      </div>
+
+      <!-- 2. Active Classroom Selection -->
+      <div class="control-box">
+        <h3>2. Active Classroom</h3>
+        <div class="input-group">
+          <select id="classDropdown"><option value="">Select a teacher first...</option></select>
+        </div>
+        <div class="input-group">
+          <input type="text" id="newClassInput" placeholder="New Class Name..." />
           <button id="createClassBtn" class="btn primary">+ Create</button>
         </div>
       </div>
 
-      <!-- 2. Active Classroom Dropdown -->
-      <div class="control-box">
-        <h3>2. Active Classroom</h3>
-        <select id="classDropdown">
-          <option value="">Loading classrooms...</option>
-        </select>
-      </div>
-
-      <!-- Live Leaderboard -->
+      <!-- 3. Class Leaderboard & PDF Export -->
       <div class="control-box leaderboard-box">
-        <h3>🏆 Class Leaderboard</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>🏆 Class Leaderboard</h3>
+          <button id="printClassReportBtn" class="btn sync" style="padding: 4px 8px; font-size: 11px;">📄 Class PDF</button>
+        </div>
         <div id="leaderboardList" class="leaderboard-list">
           <div class="empty-msg">No students ranked yet</div>
         </div>
       </div>
 
-      <!-- 3. Bulk Add Students -->
+      <!-- 4. Award Activity Points -->
       <div class="control-box">
-        <h3>3. Add Students in Bulk</h3>
-        <textarea id="bulkStudentInput" placeholder="Enter student names (one per line)..."></textarea>
-        <button id="addStudentsBtn" class="btn success">+ Add Turtles to Tank</button>
+        <h3>⚡ Award Activity Points</h3>
+        <select id="studentSelectDropdown"><option value="">Select student...</option></select>
+        <input type="text" id="activityTitleInput" placeholder="Activity Title (e.g. Quiz 1, Recitation)" />
+        <div class="input-group">
+          <input type="number" id="activityPointsInput" placeholder="Points (e.g. 15 or 18)" />
+          <button id="submitActivityBtn" class="btn success">+ Award</button>
+        </div>
       </div>
 
-      <!-- 4. Feeding Directory -->
+      <!-- 5. Add Students in Bulk -->
+      <div class="control-box">
+        <h3>5. Add Students in Bulk</h3>
+        <textarea id="bulkStudentInput" placeholder="Enter student names (one per line)..."></textarea>
+        <button id="addStudentsBtn" class="btn success">+ Add Students</button>
+      </div>
+
+      <!-- 6. Student Roster & Reports -->
       <div class="control-box student-feed-panel">
-        <h3>4. Feed Turtles</h3>
-        <div class="custom-feed-bar">
-          <input type="number" id="customPointsInput" placeholder="Custom Pts (e.g. 17)" />
-          <button id="applyCustomFeedBtn" class="btn primary">Feed Custom</button>
-        </div>
+        <h3>6. Student Roster & Reports</h3>
         <div id="studentList" class="student-list"></div>
       </div>
     </aside>
 
-    <!-- Aquarium Viewport -->
+    <!-- Aquarium Canvas Area -->
     <main class="aquarium-container">
       <div class="aquarium-overlay">
-        <h1 id="activeClassTitle">No Classroom Selected</h1>
+        <div>
+          <h1 id="activeClassTitle">No Classroom Selected</h1>
+          <p id="activeTeacherSubtitle" style="font-size: 12px; color: #80deea; margin-top: 2px;">Teacher: None</p>
+        </div>
         <button id="syncSheetBtn" class="btn sync">🔄 Sync</button>
       </div>
       <canvas id="aquariumCanvas"></canvas>
     </main>
+  </div>
+
+  <!-- Modal Box for Activity Logs -->
+  <div id="activityModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 999; padding: 16px;">
+    <div style="background: var(--panel-bg, #081a2b); border: 2px solid var(--border-color, #103454); border-radius: 12px; width: 100%; max-width: 520px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 id="modalStudentName" style="color: #4dd0e1; font-size: 18px;">Student Activity Log</h2>
+        <button id="closeModalBtn" style="background: none; border: none; color: white; font-size: 22px; cursor: pointer;">&times;</button>
+      </div>
+      <div style="max-height: 250px; overflow-y: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+          <thead>
+            <tr style="background: #061524; color: #80deea;">
+              <th style="padding: 8px; border-bottom: 1px solid #103454;">Date</th>
+              <th style="padding: 8px; border-bottom: 1px solid #103454;">Activity Title</th>
+              <th style="padding: 8px; border-bottom: 1px solid #103454;">Points</th>
+            </tr>
+          </thead>
+          <tbody id="modalActivityTableBody"></tbody>
+        </table>
+      </div>
+      <div style="display: flex; justify-content: flex-end;">
+        <button id="printSingleReportBtn" class="btn primary">🖨️ Save PDF Report</button>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>
