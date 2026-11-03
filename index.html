@@ -22,13 +22,12 @@
     </div>
   </div>
 
-  <!-- Hidden Container for Printable PDF Export -->
+  <!-- Print Container -->
   <div id="printableReport" class="print-only"></div>
 
-  <!-- Main Application Container -->
+  <!-- Main Web Application -->
   <div class="aquarium-app">
     
-    <!-- Mobile Header -->
     <header class="mobile-navbar">
       <h2>🐢 Aquarium</h2>
       <button id="toggleSidebarBtn" class="btn primary">☰ Controls</button>
@@ -41,9 +40,9 @@
         <button id="relockBtn" class="btn danger" title="Lock Controls">🔒 Lock</button>
       </div>
 
-      <!-- 1. Teacher Profile Selection -->
+      <!-- 1. Teacher Profile -->
       <div class="control-box">
-        <h3>1. Select or Add Teacher</h3>
+        <h3>1. Select / Add Teacher</h3>
         <div class="input-group">
           <select id="teacherDropdown"><option value="">Loading teachers...</option></select>
         </div>
@@ -53,7 +52,7 @@
         </div>
       </div>
 
-      <!-- 2. Active Classroom Selection -->
+      <!-- 2. Active Classroom -->
       <div class="control-box">
         <h3>2. Active Classroom</h3>
         <div class="input-group">
@@ -65,7 +64,7 @@
         </div>
       </div>
 
-      <!-- 3. Class Leaderboard & PDF Export -->
+      <!-- 3. Class Leaderboard -->
       <div class="control-box leaderboard-box">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h3>🏆 Class Leaderboard</h3>
@@ -76,25 +75,45 @@
         </div>
       </div>
 
-      <!-- 4. Award Activity Points -->
+      <!-- 4. Award Activity Points (Single & Bulk) -->
       <div class="control-box">
         <h3>⚡ Award Activity Points</h3>
-        <select id="studentSelectDropdown"><option value="">Select student...</option></select>
-        <input type="text" id="activityTitleInput" placeholder="Activity Title (e.g. Quiz 1, Recitation)" />
+        
+        <!-- Activity Title with Dropdown History -->
+        <label style="font-size: 11px; color: #80deea;">Activity Name:</label>
         <div class="input-group">
-          <input type="number" id="activityPointsInput" placeholder="Points (e.g. 15 or 18)" />
-          <button id="submitActivityBtn" class="btn success">+ Award</button>
+          <input type="text" id="activityTitleInput" list="activityHistoryList" placeholder="Select or type activity..." />
+          <datalist id="activityHistoryList"></datalist>
         </div>
+
+        <label style="font-size: 11px; color: #80deea; margin-top: 4px;">Points to Award:</label>
+        <input type="number" id="activityPointsInput" placeholder="Points (e.g. 50)" />
+
+        <!-- Student Selection Mode Toggle -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+          <label style="font-size: 11px; color: #80deea;">Select Students:</label>
+          <div>
+            <button id="selectAllStudentsBtn" class="btn small" style="background:#1a4875; padding: 2px 6px; font-size: 10px;">Select All</button>
+            <button id="deselectAllStudentsBtn" class="btn small" style="background:#1a4875; padding: 2px 6px; font-size: 10px;">Clear</button>
+          </div>
+        </div>
+
+        <!-- Student Checkbox List for Bulk Awarding -->
+        <div id="studentCheckboxContainer" style="max-height: 120px; overflow-y: auto; background: #061524; border: 1px solid #1a4875; border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+          <div class="empty-msg">No students loaded</div>
+        </div>
+
+        <button id="submitActivityBtn" class="btn success" style="margin-top: 6px;">+ Award Points to Selected</button>
       </div>
 
-      <!-- 5. Add Students in Bulk -->
+      <!-- 5. Bulk Add New Students -->
       <div class="control-box">
         <h3>5. Add Students in Bulk</h3>
         <textarea id="bulkStudentInput" placeholder="Enter student names (one per line)..."></textarea>
         <button id="addStudentsBtn" class="btn success">+ Add Students</button>
       </div>
 
-      <!-- 6. Student Roster & Reports -->
+      <!-- 6. Student Roster & Individual Reports -->
       <div class="control-box student-feed-panel">
         <h3>6. Student Roster & Reports</h3>
         <div id="studentList" class="student-list"></div>
@@ -114,7 +133,7 @@
     </main>
   </div>
 
-  <!-- Modal Box for Activity Logs -->
+  <!-- Student Activity History Modal -->
   <div id="activityModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 999; padding: 16px;">
     <div style="background: var(--panel-bg, #081a2b); border: 2px solid var(--border-color, #103454); border-radius: 12px; width: 100%; max-width: 520px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
