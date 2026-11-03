@@ -3,7 +3,8 @@ function initIcons() {
     lucide.createIcons();
   }
 }
-// Paste your deployed Google Apps Script Web App URL here:
+
+// Deployed Google Apps Script Web App URL
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykX4o72pPfgO7h4EYY3mk0dwssrG_8plN_9uWA0shgMWTro-uLXWyt4bqDkMmICGxEhQ/exec";
 
 // Security Passcode Settings
@@ -18,6 +19,8 @@ let selectedStudentForReport = null;
 
 // Lock Screen & Initial setup
 document.addEventListener("DOMContentLoaded", () => {
+  initIcons();
+
   const overlay = document.getElementById("passwordLockOverlay");
   const input = document.getElementById("passcodeInput");
   const unlockBtn = document.getElementById("unlockBtn");
@@ -99,6 +102,7 @@ class Particle {
   }
 }
 
+// Evolutionary Turtle Rendering Engine
 class Turtle {
   constructor(name, points) {
     this.name = name;
@@ -109,6 +113,7 @@ class Turtle {
     this.speed = 1.0 + Math.random() * 0.5;
     this.angle = Math.random() * Math.PI * 2;
     this.flipperSwimTimer = Math.random() * 100;
+    this.hueShift = Math.random() * 360;
   }
 
   getStage() {
@@ -117,13 +122,14 @@ class Turtle {
     if (this.points < 350) return 3;
     if (this.points < 500) return 4;
     if (this.points < 750) return 5;
-    return 5 + Math.floor((this.points - 750) / 250);
+    if (this.points < 1000) return 6;
+    return 6 + Math.floor((this.points - 1000) / 250);
   }
 
   getSize() {
     const scaleFactor = canvas.width < 600 ? 0.75 : 1;
-    const baseSize = 22 + Math.sqrt(Math.max(0, this.points)) * 2.5; 
-    return Math.min(baseSize, 110) * scaleFactor;
+    const baseSize = 24 + Math.sqrt(Math.max(0, this.points)) * 2.8; 
+    return Math.min(baseSize, 140) * scaleFactor;
   }
 
   getStageTitle() {
@@ -133,7 +139,8 @@ class Turtle {
     if (stage === 3) return "Mystic Cyber";
     if (stage === 4) return "Cosmic Leviathan";
     if (stage === 5) return "Ocean Dragon";
-    return `Celestial God T-${stage - 5}`;
+    if (stage === 6) return "Abyssal Leviathan";
+    return `Celestial Overlord T-${stage - 6}`;
   }
 
   update() {
@@ -141,6 +148,7 @@ class Turtle {
     this.x += Math.cos(this.angle) * this.speed;
     this.y += Math.sin(this.angle) * this.speed;
     this.flipperSwimTimer += 0.08;
+    this.hueShift = (this.hueShift + 1.5) % 360;
 
     const margin = this.getSize() + 30;
     if (this.x < margin) {
@@ -159,8 +167,8 @@ class Turtle {
       this.angle = Math.atan2(-Math.abs(Math.sin(this.angle)), Math.cos(this.angle));
     }
 
-    if (this.getStage() >= 3 && Math.random() < 0.3) {
-      const colors = ["#80deea", "#b388ff", "#ffd54f", "#ff80ab"];
+    if (this.getStage() >= 3 && Math.random() < 0.35) {
+      const colors = ["#80deea", "#b388ff", "#ffd54f", "#ff80ab", "#00e676"];
       particles.push(new Particle(this.x, this.y, colors[this.getStage() % colors.length]));
     }
   }
@@ -178,16 +186,37 @@ class Turtle {
     let secondaryColor = "#81c784"; 
     let auraColor = "rgba(76, 175, 80, 0.4)";
 
-    if (stage === 2) { primaryColor = "#00838f"; secondaryColor = "#4dd0e1"; auraColor = "rgba(0, 188, 212, 0.5)"; }
-    if (stage === 3) { primaryColor = "#6a1b9a"; secondaryColor = "#ba68c8"; auraColor = "rgba(156, 39, 176, 0.6)"; }
-    if (stage === 4) { primaryColor = "#f57f17"; secondaryColor = "#fff176"; auraColor = "rgba(255, 215, 0, 0.7)"; }
-    if (stage >= 5) { primaryColor = "#c62828"; secondaryColor = "#ff8a80"; auraColor = "rgba(255, 82, 82, 0.8)"; }
+    if (stage === 2) {
+      primaryColor = "#00838f"; secondaryColor = "#4dd0e1"; auraColor = "rgba(0, 188, 212, 0.5)";
+    } else if (stage === 3) {
+      primaryColor = "#6a1b9a"; secondaryColor = "#ba68c8"; auraColor = "rgba(156, 39, 176, 0.6)";
+    } else if (stage === 4) {
+      primaryColor = "#f57f17"; secondaryColor = "#fff176"; auraColor = "rgba(255, 215, 0, 0.7)";
+    } else if (stage === 5) {
+      primaryColor = "#c62828"; secondaryColor = "#ff8a80"; auraColor = "rgba(255, 82, 82, 0.8)";
+    } else if (stage >= 6) {
+      primaryColor = `hsl(${this.hueShift}, 85%, 45%)`;
+      secondaryColor = `hsl(${(this.hueShift + 60) % 360}, 100%, 75%)`;
+      auraColor = `hsla(${this.hueShift}, 100%, 65%, 0.9)`;
+    }
 
     if (stage >= 2) {
-      ctx.shadowBlur = 12 + stage * 3;
+      ctx.shadowBlur = 12 + stage * 4;
       ctx.shadowColor = auraColor;
     }
 
+    // Celestial Halo (Stage 6+)
+    if (stage >= 6) {
+      ctx.save();
+      ctx.strokeStyle = secondaryColor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, -size * 1.15, size * 0.45, size * 0.15, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Left Flipper
     ctx.fillStyle = primaryColor;
     ctx.save();
     ctx.translate(-size * 0.55, -size * 0.25);
@@ -195,27 +224,64 @@ class Turtle {
     ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 
+    // Right Flipper
     ctx.save();
     ctx.translate(size * 0.55, -size * 0.25);
     ctx.rotate(0.5 - flipperAngle);
     ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 
+    // Head
     ctx.fillStyle = primaryColor;
     ctx.beginPath(); ctx.arc(0, -size * 0.75, size * 0.3, 0, Math.PI * 2); ctx.fill();
 
+    // Eyes
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.arc(-size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
     ctx.arc(size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
     ctx.fill();
 
+    // Pupils
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.arc(-size * 0.12, -size * 0.87, size * 0.03, 0, Math.PI * 2);
+    ctx.arc(size * 0.12, -size * 0.87, size * 0.03, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Shell Body
     ctx.fillStyle = primaryColor;
     ctx.beginPath(); ctx.ellipse(0, 0, size * 0.65, size * 0.8, 0, 0, Math.PI * 2); ctx.fill();
     ctx.lineWidth = 2.5; ctx.strokeStyle = secondaryColor; ctx.stroke();
 
+    // Hex Pattern
+    ctx.strokeStyle = secondaryColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const hexRadius = size * 0.25;
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i;
+      const hx = hexRadius * Math.cos(angle);
+      const hy = hexRadius * Math.sin(angle);
+      if (i === 0) ctx.moveTo(hx, hy);
+      else ctx.lineTo(hx, hy);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    // Shell Crest Lines (Stage 4+)
+    if (stage >= 4) {
+      ctx.beginPath();
+      ctx.moveTo(0, -hexRadius); ctx.lineTo(0, -size * 0.65);
+      ctx.moveTo(0, hexRadius); ctx.lineTo(0, size * 0.65);
+      ctx.moveTo(-hexRadius, 0); ctx.lineTo(-size * 0.5, 0);
+      ctx.moveTo(hexRadius, 0); ctx.lineTo(size * 0.5, 0);
+      ctx.stroke();
+    }
+
     ctx.restore();
 
+    // Student Label
     ctx.save();
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 13px 'Fredoka', sans-serif";
@@ -229,7 +295,7 @@ class Turtle {
   }
 }
 
-// Data Sync
+// Backend Data Sync
 async function fetchSheetData() {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
     classroomData = {
@@ -311,7 +377,6 @@ function loadClassroom(className) {
   renderStudentRoster(students);
 }
 
-// Multi-Select Student Checkboxes for Bulk Awarding
 function populateStudentCheckboxes(students) {
   const container = document.getElementById("studentCheckboxContainer");
   container.innerHTML = "";
@@ -337,7 +402,6 @@ function populateStudentCheckboxes(students) {
   });
 }
 
-// Activity History Dropdown list
 function populateActivityHistory(students) {
   const datalist = document.getElementById("activityHistoryList");
   datalist.innerHTML = "";
@@ -360,7 +424,6 @@ function populateActivityHistory(students) {
   });
 }
 
-// Leaderboard with ties
 function renderLeaderboard(students) {
   const list = document.getElementById("leaderboardList");
   list.innerHTML = "";
@@ -404,13 +467,17 @@ function renderStudentRoster(students) {
     card.className = "student-card";
     card.innerHTML = `
       <span><b>${student.name}</b> (${student.totalPoints} pts)</span>
-      <button class="btn primary" style="padding: 4px 8px; font-size: 11px;" onclick="openStudentReport('${student.name}')">📋 Report</button>
+      <button class="btn primary" style="padding: 4px 8px; font-size: 11px;" onclick="openStudentReport('${student.name}')">
+        <i data-lucide="file-text"></i> Report
+      </button>
     `;
     list.appendChild(card);
   });
+  
+  initIcons();
 }
 
-// Award Activity Points (Supports Bulk Students)
+// Point Awarding Action
 document.getElementById("submitActivityBtn").addEventListener("click", async () => {
   const checkedBoxes = document.querySelectorAll(".student-checkbox:checked");
   const selectedStudents = Array.from(checkedBoxes).map(cb => cb.value);
@@ -424,7 +491,6 @@ document.getElementById("submitActivityBtn").addEventListener("click", async () 
 
   const currentDate = new Date().toLocaleDateString();
 
-  // Local update
   selectedStudents.forEach(studentName => {
     const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
     if (student) {
@@ -449,7 +515,6 @@ document.getElementById("submitActivityBtn").addEventListener("click", async () 
   document.getElementById("activityTitleInput").value = "";
   document.getElementById("activityPointsInput").value = "";
 
-  // Cloud sync
   if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
     await fetch(APPS_SCRIPT_URL, {
       method: "POST",
@@ -465,7 +530,7 @@ document.getElementById("submitActivityBtn").addEventListener("click", async () 
   }
 });
 
-// PDF / Modal Handlers
+// Modal Display Handler
 function openStudentReport(studentName) {
   selectedStudentForReport = studentName;
   const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
@@ -486,54 +551,88 @@ function openStudentReport(studentName) {
   }
 
   document.getElementById("activityModal").style.display = "flex";
+  initIcons();
 }
 
+// Individual Student PDF Generator
 document.getElementById("printSingleReportBtn").addEventListener("click", () => {
   const student = classroomData[activeTeacher][activeClass].find(s => s.name === selectedStudentForReport);
   if (!student) return;
 
   const printArea = document.getElementById("printableReport");
-  let rowsHtml = student.activities.map(a => `
-    <tr><td>${a.date}</td><td>${a.activity}</td><td>+${a.points}</td></tr>
+  let rowsHtml = (student.activities || []).map(a => `
+    <tr>
+      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px;">${a.date}</td>
+      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px;">${a.activity}</td>
+      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; font-weight: bold;">+${a.points}</td>
+    </tr>
   `).join("");
 
   printArea.innerHTML = `
-    <div style="padding: 20px; font-family: Arial, sans-serif; color: #000;">
-      <h1>Student Activity & Points Report</h1>
-      <h3>Teacher: ${activeTeacher} | Class: ${activeClass} | Student: ${student.name} | Total Points: ${student.totalPoints}</h3>
-      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-        <thead><tr style="background: #f0f0f0;"><th style="border: 1px solid #ccc; padding: 8px;">Date</th><th style="border: 1px solid #ccc; padding: 8px;">Activity Title</th><th style="border: 1px solid #ccc; padding: 8px;">Points Awarded</th></tr></thead>
+    <div style="font-family: Arial, sans-serif; color: #000; padding: 10px;">
+      <h1 style="font-size: 24px; margin-bottom: 6px;">Student Activity & Points Report</h1>
+      <h3 style="font-size: 14px; color: #444; margin-bottom: 20px;">
+        <b>Teacher:</b> ${activeTeacher} &nbsp;|&nbsp; 
+        <b>Class:</b> ${activeClass} &nbsp;|&nbsp; 
+        <b>Student:</b> ${student.name} &nbsp;|&nbsp; 
+        <b>Total Points:</b> ${student.totalPoints}
+      </h3>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+        <thead>
+          <tr style="background: #f0f0f0;">
+            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Date</th>
+            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Activity Title</th>
+            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Points Awarded</th>
+          </tr>
+        </thead>
         <tbody>${rowsHtml}</tbody>
       </table>
     </div>
   `;
 
   window.print();
+  printArea.innerHTML = "";
 });
 
+// Classroom PDF Summary Generator
 document.getElementById("printClassReportBtn").addEventListener("click", () => {
   const students = (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) ? classroomData[activeTeacher][activeClass] : [];
   const printArea = document.getElementById("printableReport");
 
   let rowsHtml = students.map(s => `
-    <tr><td>${s.name}</td><td>${s.totalPoints}</td><td>${s.activities ? s.activities.length : 0} activities</td></tr>
+    <tr>
+      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; font-weight: bold;">${s.name}</td>
+      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; text-align: center;">${s.totalPoints}</td>
+      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; text-align: center;">${s.activities ? s.activities.length : 0} activities</td>
+    </tr>
   `).join("");
 
   printArea.innerHTML = `
-    <div style="padding: 20px; font-family: Arial, sans-serif; color: #000;">
-      <h1>Classroom Summary Report</h1>
-      <h3>Teacher: ${activeTeacher} | Class: ${activeClass} | Date: ${new Date().toLocaleDateString()}</h3>
-      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-        <thead><tr style="background: #f0f0f0;"><th style="border: 1px solid #ccc; padding: 8px;">Student Name</th><th style="border: 1px solid #ccc; padding: 8px;">Total Accumulated Points</th><th style="border: 1px solid #ccc; padding: 8px;">Total Activities Completed</th></tr></thead>
+    <div style="font-family: Arial, sans-serif; color: #000; padding: 10px;">
+      <h1 style="font-size: 24px; margin-bottom: 6px;">Classroom Summary Report</h1>
+      <h3 style="font-size: 14px; color: #444; margin-bottom: 20px;">
+        <b>Teacher:</b> ${activeTeacher} &nbsp;|&nbsp; 
+        <b>Class:</b> ${activeClass} &nbsp;|&nbsp; 
+        <b>Date:</b> ${new Date().toLocaleDateString()}
+      </h3>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+        <thead>
+          <tr style="background: #f0f0f0;">
+            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Student Name</th>
+            <th style="border: 1px solid #ccc; padding: 10px; text-align: center; font-size: 14px;">Total Accumulated Points</th>
+            <th style="border: 1px solid #ccc; padding: 10px; text-align: center; font-size: 14px;">Total Activities Completed</th>
+          </tr>
+        </thead>
         <tbody>${rowsHtml}</tbody>
       </table>
     </div>
   `;
 
   window.print();
+  printArea.innerHTML = "";
 });
 
-// Event Controls
+// App Controls
 document.getElementById("createTeacherBtn").addEventListener("click", () => {
   const input = document.getElementById("newTeacherInput");
   const teacherName = input.value.trim();
@@ -609,81 +708,3 @@ function animate() {
 
 fetchSheetData();
 animate();
-
-// Student Individual PDF Report Handler
-document.getElementById("printSingleReportBtn").addEventListener("click", () => {
-  const student = classroomData[activeTeacher][activeClass].find(s => s.name === selectedStudentForReport);
-  if (!student) return;
-
-  const printArea = document.getElementById("printableReport");
-  let rowsHtml = (student.activities || []).map(a => `
-    <tr>
-      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px;">${a.date}</td>
-      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px;">${a.activity}</td>
-      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; font-weight: bold;">+${a.points}</td>
-    </tr>
-  `).join("");
-
-  printArea.innerHTML = `
-    <div style="font-family: Arial, sans-serif; color: #000; padding: 10px;">
-      <h1 style="font-size: 24px; margin-bottom: 6px;">Student Activity & Points Report</h1>
-      <h3 style="font-size: 14px; color: #444; margin-bottom: 20px;">
-        <b>Teacher:</b> ${activeTeacher} &nbsp;|&nbsp; 
-        <b>Class:</b> ${activeClass} &nbsp;|&nbsp; 
-        <b>Student:</b> ${student.name} &nbsp;|&nbsp; 
-        <b>Total Points:</b> ${student.totalPoints}
-      </h3>
-      <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-        <thead>
-          <tr style="background: #f0f0f0;">
-            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Date</th>
-            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Activity Title</th>
-            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Points Awarded</th>
-          </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-    </div>
-  `;
-
-  window.print();
-  printArea.innerHTML = "";
-});
-
-// Classroom Summary PDF Report Handler
-document.getElementById("printClassReportBtn").addEventListener("click", () => {
-  const students = (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) ? classroomData[activeTeacher][activeClass] : [];
-  const printArea = document.getElementById("printableReport");
-
-  let rowsHtml = students.map(s => `
-    <tr>
-      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; font-weight: bold;">${s.name}</td>
-      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; text-align: center;">${s.totalPoints}</td>
-      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; text-align: center;">${s.activities ? s.activities.length : 0} activities</td>
-    </tr>
-  `).join("");
-
-  printArea.innerHTML = `
-    <div style="font-family: Arial, sans-serif; color: #000; padding: 10px;">
-      <h1 style="font-size: 24px; margin-bottom: 6px;">Classroom Summary Report</h1>
-      <h3 style="font-size: 14px; color: #444; margin-bottom: 20px;">
-        <b>Teacher:</b> ${activeTeacher} &nbsp;|&nbsp; 
-        <b>Class:</b> ${activeClass} &nbsp;|&nbsp; 
-        <b>Date:</b> ${new Date().toLocaleDateString()}
-      </h3>
-      <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-        <thead>
-          <tr style="background: #f0f0f0;">
-            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Student Name</th>
-            <th style="border: 1px solid #ccc; padding: 10px; text-align: center; font-size: 14px;">Total Accumulated Points</th>
-            <th style="border: 1px solid #ccc; padding: 10px; text-align: center; font-size: 14px;">Total Activities Completed</th>
-          </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-    </div>
-  `;
-
-  window.print();
-  printArea.innerHTML = "";
-});
