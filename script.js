@@ -89,14 +89,18 @@ window.addEventListener("orientationchange", resizeCanvas);
 resizeCanvas();
 
 class Particle {
-  constructor(x, y, color) {
+  constructor(x, y, color, vx = null, vy = null, size = null) {
     this.x = x; this.y = y; this.color = color;
-    this.size = Math.random() * 3 + 1;
+    this.size = size || (Math.random() * 3 + 1);
     this.alpha = 1;
-    this.vx = (Math.random() - 0.5) * 0.8;
-    this.vy = (Math.random() - 0.5) * 0.8;
+    this.vx = vx !== null ? vx : (Math.random() - 0.5) * 0.8;
+    this.vy = vy !== null ? vy : (Math.random() - 0.5) * 0.8;
   }
-  update() { this.x += this.vx; this.y += this.vy; this.alpha -= 0.02; }
+  update() { 
+    this.x += this.vx; 
+    this.y += this.vy; 
+    this.alpha -= 0.02; 
+  }
   draw() {
     ctx.save();
     ctx.globalAlpha = Math.max(0, this.alpha);
@@ -121,9 +125,19 @@ class Turtle {
     this.flipperSwimTimer = Math.random() * 100;
     this.hueShift = Math.random() * 360;
 
+    // Ability activation timer (in animation frames)
+    this.abilityTimer = 0;
+
     // Randomize permanent elemental branch for 1000+ points
     const elements = ['lightning', 'water', 'fire', 'shadow', 'celestial'];
     this.element = elements[Math.floor(Math.random() * elements.length)];
+  }
+
+  // Trigger Elemental Ability
+  triggerAbility() {
+    if (this.getStage() >= 11) {
+      this.abilityTimer = 180; // Ability animates for 3 seconds (60fps * 3)
+    }
   }
 
   // Evolves every 100 points indefinitely
@@ -133,7 +147,6 @@ class Turtle {
 
   getSize() {
     const scaleFactor = canvas.width < 600 ? 0.75 : 1;
-    // Base size grows every 100 points, capping visually at 150px
     const baseSize = 24 + (this.getStage() - 1) * 6; 
     return Math.min(baseSize, 150) * scaleFactor;
   }
@@ -141,7 +154,6 @@ class Turtle {
   getStageTitle() {
     const stage = this.getStage();
     
-    // Stages under 1000 pts (Stage 1 to 10)
     if (stage === 1) return "Hatchling";
     if (stage === 2) return "Armored Shell";
     if (stage === 3) return "Mystic Cyber";
@@ -153,7 +165,6 @@ class Turtle {
     if (stage === 9) return "Elder Leviathan";
     if (stage === 10) return "Ascended Warden";
 
-    // Stage 11+ (1000+ points) - Elemental Evolution Path
     const elementalTitles = {
       lightning: "Storm-Forged Raiju",
       water: "Tidal Abyss Sovereign",
@@ -169,24 +180,22 @@ class Turtle {
   getElementColors() {
     const stage = this.getStage();
 
-    // Standard progression (under 1000 points)
     if (stage < 11) {
       const palette = [
-        { primary: "#2e7d32", secondary: "#81c784", aura: "rgba(76, 175, 80, 0.4)" },   // 0-99
-        { primary: "#00838f", secondary: "#4dd0e1", aura: "rgba(0, 188, 212, 0.5)" },   // 100-199
-        { primary: "#6a1b9a", secondary: "#ba68c8", aura: "rgba(156, 39, 176, 0.6)" },  // 200-299
-        { primary: "#f57f17", secondary: "#fff176", aura: "rgba(255, 215, 0, 0.7)" },   // 300-399
-        { primary: "#c62828", secondary: "#ff8a80", aura: "rgba(255, 82, 82, 0.8)" },   // 400-499
-        { primary: "#283593", secondary: "#7986cb", aura: "rgba(63, 81, 181, 0.8)" },   // 500-599
-        { primary: "#00695c", secondary: "#80cbc4", aura: "rgba(0, 150, 136, 0.8)" },   // 600-699
-        { primary: "#d81b60", secondary: "#ff80ab", aura: "rgba(233, 30, 99, 0.8)" },   // 700-799
-        { primary: "#ef6c00", secondary: "#ffb74d", aura: "rgba(255, 152, 0, 0.8)" },   // 800-899
-        { primary: "#4e342e", secondary: "#bcaaa4", aura: "rgba(121, 85, 72, 0.8)" }    // 900-999
+        { primary: "#2e7d32", secondary: "#81c784", aura: "rgba(76, 175, 80, 0.4)" },
+        { primary: "#00838f", secondary: "#4dd0e1", aura: "rgba(0, 188, 212, 0.5)" },
+        { primary: "#6a1b9a", secondary: "#ba68c8", aura: "rgba(156, 39, 176, 0.6)" },
+        { primary: "#f57f17", secondary: "#fff176", aura: "rgba(255, 215, 0, 0.7)" },
+        { primary: "#c62828", secondary: "#ff8a80", aura: "rgba(255, 82, 82, 0.8)" },
+        { primary: "#283593", secondary: "#7986cb", aura: "rgba(63, 81, 181, 0.8)" },
+        { primary: "#00695c", secondary: "#80cbc4", aura: "rgba(0, 150, 136, 0.8)" },
+        { primary: "#d81b60", secondary: "#ff80ab", aura: "rgba(233, 30, 99, 0.8)" },
+        { primary: "#ef6c00", secondary: "#ffb74d", aura: "rgba(255, 152, 0, 0.8)" },
+        { primary: "#4e342e", secondary: "#bcaaa4", aura: "rgba(121, 85, 72, 0.8)" }
       ];
       return palette[(stage - 1) % palette.length];
     }
 
-    // Randomized Elemental Styles (1000+ points)
     switch (this.element) {
       case 'lightning':
         return { primary: "#ffd600", secondary: "#ffffff", aura: "rgba(255, 235, 59, 0.95)", particle: "#ffff8d" };
@@ -208,9 +217,12 @@ class Turtle {
   }
 
   update() {
+    // Speed boost when unleashing ability
+    const currentSpeed = this.abilityTimer > 0 ? this.speed * 2.2 : this.speed;
+
     this.angle += (Math.random() - 0.5) * 0.08;
-    this.x += Math.cos(this.angle) * this.speed;
-    this.y += Math.sin(this.angle) * this.speed;
+    this.x += Math.cos(this.angle) * currentSpeed;
+    this.y += Math.sin(this.angle) * currentSpeed;
     this.flipperSwimTimer += 0.08;
     this.hueShift = (this.hueShift + 1.5) % 360;
 
@@ -231,11 +243,96 @@ class Turtle {
       this.angle = Math.atan2(-Math.abs(Math.sin(this.angle)), Math.cos(this.angle));
     }
 
-    // Particle trails scale up with stage
+    // Standard Particle Trail
     const stage = this.getStage();
     if (stage >= 3 && Math.random() < Math.min(0.8, 0.2 + stage * 0.05)) {
       const colors = this.getElementColors();
       particles.push(new Particle(this.x, this.y, colors.particle || colors.secondary));
+    }
+
+    // Execute Elemental Ability Effects when Active
+    if (this.abilityTimer > 0) {
+      this.abilityTimer--;
+      this.generateAbilityParticles();
+    }
+  }
+
+  generateAbilityParticles() {
+    const colors = this.getElementColors();
+    const size = this.getSize();
+
+    switch (this.element) {
+      case 'lightning':
+        for (let i = 0; i < 3; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const dist = Math.random() * size * 1.5;
+          particles.push(new Particle(
+            this.x + Math.cos(angle) * dist,
+            this.y + Math.sin(angle) * dist,
+            "#ffff00",
+            (Math.random() - 0.5) * 4,
+            (Math.random() - 0.5) * 4,
+            Math.random() * 4 + 2
+          ));
+        }
+        break;
+
+      case 'water':
+        for (let i = 0; i < 4; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 3 + 1;
+          particles.push(new Particle(
+            this.x, this.y,
+            "#00e5ff",
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed,
+            Math.random() * 5 + 2
+          ));
+        }
+        break;
+
+      case 'fire':
+        for (let i = 0; i < 5; i++) {
+          particles.push(new Particle(
+            this.x + (Math.random() - 0.5) * size,
+            this.y + (Math.random() - 0.5) * size,
+            Math.random() < 0.5 ? "#ff3d00" : "#ffab00",
+            (Math.random() - 0.5) * 2,
+            -Math.random() * 3 - 1,
+            Math.random() * 6 + 2
+          ));
+        }
+        break;
+
+      case 'shadow':
+        for (let i = 0; i < 4; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const dist = size * 1.2;
+          particles.push(new Particle(
+            this.x + Math.cos(angle) * dist,
+            this.y + Math.sin(angle) * dist,
+            "#ea80fc",
+            -Math.cos(angle) * 1.5,
+            -Math.sin(angle) * 1.5,
+            Math.random() * 4 + 1
+          ));
+        }
+        break;
+
+      case 'celestial':
+      default:
+        for (let i = 0; i < 4; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 2 + 1;
+          particles.push(new Particle(
+            this.x, this.y,
+            `hsl(${Math.random() * 360}, 100%, 80%)`,
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed,
+            Math.random() * 4 + 2
+          ));
+        }
+        break;
     }
   }
 
@@ -247,11 +344,17 @@ class Turtle {
 
     ctx.save();
     ctx.translate(this.x, this.y);
+
+    // Render Ability Canvas FX overlay (Lightning Arcs / Shockwaves)
+    if (this.abilityTimer > 0 && stage >= 11) {
+      this.drawAbilityFX(size, style);
+    }
+
     ctx.rotate(this.angle + Math.PI / 2);
 
     // Dynamic Glow Aura
     if (stage >= 2) {
-      ctx.shadowBlur = Math.min(40, 10 + stage * 3);
+      ctx.shadowBlur = this.abilityTimer > 0 ? 50 : Math.min(40, 10 + stage * 3);
       ctx.shadowColor = style.aura;
     }
 
@@ -292,7 +395,7 @@ class Turtle {
     ctx.arc(size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
     ctx.fill();
 
-    // Pupils (Glow matching secondary color at 1000+ pts)
+    // Pupils
     ctx.fillStyle = stage >= 11 ? style.secondary : "#000000";
     ctx.beginPath();
     ctx.arc(-size * 0.12, -size * 0.87, size * 0.03, 0, Math.PI * 2);
@@ -341,6 +444,41 @@ class Turtle {
     ctx.fillStyle = style.secondary;
     ctx.font = "11px 'Fredoka', sans-serif";
     ctx.fillText(`${this.getStageTitle()} • ${this.points} pts`, this.x, this.y + size + 30);
+    ctx.restore();
+  }
+
+  // Draw Specific Ability FX per Element
+  drawAbilityFX(size, style) {
+    ctx.save();
+
+    if (this.element === 'lightning') {
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        let lx = 0, ly = 0;
+        for (let j = 0; j < 4; j++) {
+          lx += (Math.random() - 0.5) * size;
+          ly += (Math.random() - 0.5) * size;
+          ctx.lineTo(lx, ly);
+        }
+        ctx.stroke();
+      }
+    } else if (this.element === 'water') {
+      const ringRadius = ((180 - this.abilityTimer) % 60) * (size * 0.05);
+      ctx.strokeStyle = "rgba(0, 229, 255, 0.8)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (this.element === 'shadow') {
+      ctx.fillStyle = "rgba(49, 27, 146, 0.4)";
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     ctx.restore();
   }
 }
@@ -533,7 +671,7 @@ function renderStudentRoster(students) {
   initIcons();
 }
 
-// Point Awarding Action
+// Point Awarding Action with Elemental Ability Activation
 document.getElementById("submitActivityBtn")?.addEventListener("click", async () => {
   const checkedBoxes = document.querySelectorAll(".student-checkbox:checked");
   const selectedStudents = Array.from(checkedBoxes).map(cb => cb.value);
@@ -560,7 +698,10 @@ document.getElementById("submitActivityBtn")?.addEventListener("click", async ()
     }
 
     const turtle = turtles.find(t => t.name === studentName);
-    if (turtle) turtle.points += points;
+    if (turtle) {
+      turtle.points += points;
+      turtle.triggerAbility(); // Triggers elemental ability effect
+    }
   });
 
   const students = classroomData[activeTeacher][activeClass];
