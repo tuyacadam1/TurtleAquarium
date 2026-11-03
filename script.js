@@ -99,7 +99,7 @@ class Particle {
   update() { 
     this.x += this.vx; 
     this.y += this.vy; 
-    this.alpha -= 0.02; 
+    this.alpha -= 0.015; // Slightly slower fade for sustained effects
   }
   draw() {
     ctx.save();
@@ -125,7 +125,7 @@ class Turtle {
     this.flipperSwimTimer = Math.random() * 100;
     this.hueShift = Math.random() * 360;
 
-    // Ability activation timer (in animation frames)
+    // Ability activation timer (60fps * 10 seconds = 600 frames)
     this.abilityTimer = 0;
 
     // Randomize permanent elemental branch for 1000+ points
@@ -133,11 +133,9 @@ class Turtle {
     this.element = elements[Math.floor(Math.random() * elements.length)];
   }
 
-  // Trigger Elemental Ability
+  // Trigger Ability for 10 Full Seconds
   triggerAbility() {
-    if (this.getStage() >= 11) {
-      this.abilityTimer = 180; // Ability animates for 3 seconds (60fps * 3)
-    }
+    this.abilityTimer = 600; 
   }
 
   // Evolves every 100 points indefinitely
@@ -217,13 +215,13 @@ class Turtle {
   }
 
   update() {
-    // Speed boost when unleashing ability
-    const currentSpeed = this.abilityTimer > 0 ? this.speed * 2.2 : this.speed;
+    // Dynamic Speed Burst During 10s Ability
+    const currentSpeed = this.abilityTimer > 0 ? this.speed * 2.5 : this.speed;
 
     this.angle += (Math.random() - 0.5) * 0.08;
     this.x += Math.cos(this.angle) * currentSpeed;
     this.y += Math.sin(this.angle) * currentSpeed;
-    this.flipperSwimTimer += 0.08;
+    this.flipperSwimTimer += this.abilityTimer > 0 ? 0.2 : 0.08;
     this.hueShift = (this.hueShift + 1.5) % 360;
 
     const margin = this.getSize() + 30;
@@ -250,7 +248,7 @@ class Turtle {
       particles.push(new Particle(this.x, this.y, colors.particle || colors.secondary));
     }
 
-    // Execute Elemental Ability Effects when Active
+    // Execute Ability Effects when Active
     if (this.abilityTimer > 0) {
       this.abilityTimer--;
       this.generateAbilityParticles();
@@ -258,78 +256,134 @@ class Turtle {
   }
 
   generateAbilityParticles() {
-    const colors = this.getElementColors();
+    const stage = this.getStage();
     const size = this.getSize();
 
+    if (stage < 11) {
+      // Stage 1-10 Particle Ability Effects
+      switch (stage) {
+        case 1: // Hatchling - Floating Tiny Bubbles Stream
+          particles.push(new Particle(this.x, this.y, "#e0f7fa", (Math.random() - 0.5) * 1.5, -Math.random() * 2 - 0.5, Math.random() * 4 + 1.5));
+          break;
+        case 2: // Armored Shell - Metallic Shield Pulse Sparks
+          for (let i = 0; i < 2; i++) {
+            particles.push(new Particle(this.x, this.y, "#4dd0e1", (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, Math.random() * 4 + 1.5));
+          }
+          break;
+        case 3: // Mystic Cyber - Digital Data Burst
+          for (let i = 0; i < 3; i++) {
+            particles.push(new Particle(this.x, this.y, Math.random() < 0.5 ? "#ba68c8" : "#80deea", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 4 + 2));
+          }
+          break;
+        case 4: // Cosmic Leviathan - Cosmic Stardust Shower
+          for (let i = 0; i < 3; i++) {
+            particles.push(new Particle(this.x, this.y, "#fff176", (Math.random() - 0.5) * 3.5, (Math.random() - 0.5) * 3.5, Math.random() * 5 + 2));
+          }
+          break;
+        case 5: // Ocean Guardian - Hydro Jet Torrent
+          for (let i = 0; i < 4; i++) {
+            particles.push(new Particle(this.x, this.y, "#ff8a80", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 5 + 2));
+          }
+          break;
+        case 6: // Abyssal Drake - Deep Indigo Sonar Explosion
+          for (let i = 0; i < 4; i++) {
+            particles.push(new Particle(this.x, this.y, "#7986cb", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 5 + 2));
+          }
+          break;
+        case 7: // Titan Shell - Tremor Rock Eruption
+          for (let i = 0; i < 4; i++) {
+            particles.push(new Particle(this.x, this.y, "#80cbc4", (Math.random() - 0.5) * 3.5, (Math.random() - 0.5) * 3.5, Math.random() * 6 + 2));
+          }
+          break;
+        case 8: // Prismatic Behemoth - Prism Supernova Flares
+          for (let i = 0; i < 5; i++) {
+            particles.push(new Particle(this.x, this.y, "#ff80ab", (Math.random() - 0.5) * 4.5, (Math.random() - 0.5) * 4.5, Math.random() * 5 + 2));
+          }
+          break;
+        case 9: // Elder Leviathan - Solar Plasma Storm
+          for (let i = 0; i < 5; i++) {
+            particles.push(new Particle(this.x, this.y, "#ffb74d", (Math.random() - 0.5) * 4, -Math.random() * 3 - 1, Math.random() * 6 + 2));
+          }
+          break;
+        case 10: // Ascended Warden - Divine Celestial Rays
+          for (let i = 0; i < 5; i++) {
+            particles.push(new Particle(this.x, this.y, "#ffd700", (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, Math.random() * 6 + 2));
+          }
+          break;
+      }
+      return;
+    }
+
+    // Stage 11+ (1000+ Points) Extended Elemental Abilities
     switch (this.element) {
       case 'lightning':
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 4; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const dist = Math.random() * size * 1.5;
+          const dist = Math.random() * size * 1.8;
           particles.push(new Particle(
             this.x + Math.cos(angle) * dist,
             this.y + Math.sin(angle) * dist,
             "#ffff00",
-            (Math.random() - 0.5) * 4,
-            (Math.random() - 0.5) * 4,
-            Math.random() * 4 + 2
-          ));
-        }
-        break;
-
-      case 'water':
-        for (let i = 0; i < 4; i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = Math.random() * 3 + 1;
-          particles.push(new Particle(
-            this.x, this.y,
-            "#00e5ff",
-            Math.cos(angle) * speed,
-            Math.sin(angle) * speed,
+            (Math.random() - 0.5) * 5,
+            (Math.random() - 0.5) * 5,
             Math.random() * 5 + 2
           ));
         }
         break;
 
-      case 'fire':
+      case 'water':
         for (let i = 0; i < 5; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 4 + 1;
           particles.push(new Particle(
-            this.x + (Math.random() - 0.5) * size,
-            this.y + (Math.random() - 0.5) * size,
-            Math.random() < 0.5 ? "#ff3d00" : "#ffab00",
-            (Math.random() - 0.5) * 2,
-            -Math.random() * 3 - 1,
+            this.x, this.y,
+            "#00e5ff",
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed,
             Math.random() * 6 + 2
           ));
         }
         break;
 
+      case 'fire':
+        for (let i = 0; i < 6; i++) {
+          particles.push(new Particle(
+            this.x + (Math.random() - 0.5) * size,
+            this.y + (Math.random() - 0.5) * size,
+            Math.random() < 0.5 ? "#ff3d00" : "#ffab00",
+            (Math.random() - 0.5) * 3,
+            -Math.random() * 4 - 1,
+            Math.random() * 7 + 2
+          ));
+        }
+        break;
+
       case 'shadow':
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 5; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const dist = size * 1.2;
+          const dist = size * 1.4;
           particles.push(new Particle(
             this.x + Math.cos(angle) * dist,
             this.y + Math.sin(angle) * dist,
             "#ea80fc",
-            -Math.cos(angle) * 1.5,
-            -Math.sin(angle) * 1.5,
-            Math.random() * 4 + 1
+            -Math.cos(angle) * 2,
+            -Math.sin(angle) * 2,
+            Math.random() * 5 + 1.5
           ));
         }
         break;
 
       case 'celestial':
       default:
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 5; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const speed = Math.random() * 2 + 1;
+          const speed = Math.random() * 3 + 1;
           particles.push(new Particle(
             this.x, this.y,
             `hsl(${Math.random() * 360}, 100%, 80%)`,
             Math.cos(angle) * speed,
             Math.sin(angle) * speed,
-            Math.random() * 4 + 2
+            Math.random() * 5 + 2
           ));
         }
         break;
@@ -345,16 +399,16 @@ class Turtle {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Render Ability Canvas FX overlay (Lightning Arcs / Shockwaves)
-    if (this.abilityTimer > 0 && stage >= 11) {
+    // Render Ability Canvas FX Ring / Shield
+    if (this.abilityTimer > 0) {
       this.drawAbilityFX(size, style);
     }
 
     ctx.rotate(this.angle + Math.PI / 2);
 
-    // Dynamic Glow Aura
+    // Dynamic Glow Aura (Amplified during 10s ability)
     if (stage >= 2) {
-      ctx.shadowBlur = this.abilityTimer > 0 ? 50 : Math.min(40, 10 + stage * 3);
+      ctx.shadowBlur = this.abilityTimer > 0 ? 60 : Math.min(40, 10 + stage * 3);
       ctx.shadowColor = style.aura;
     }
 
@@ -447,36 +501,48 @@ class Turtle {
     ctx.restore();
   }
 
-  // Draw Specific Ability FX per Element
+  // Draw Specific Ability FX per Stage / Element
   drawAbilityFX(size, style) {
+    const stage = this.getStage();
     ctx.save();
 
-    if (this.element === 'lightning') {
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2;
-      for (let i = 0; i < 3; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        let lx = 0, ly = 0;
-        for (let j = 0; j < 4; j++) {
-          lx += (Math.random() - 0.5) * size;
-          ly += (Math.random() - 0.5) * size;
-          ctx.lineTo(lx, ly);
-        }
-        ctx.stroke();
-      }
-    } else if (this.element === 'water') {
-      const ringRadius = ((180 - this.abilityTimer) % 60) * (size * 0.05);
-      ctx.strokeStyle = "rgba(0, 229, 255, 0.8)";
-      ctx.lineWidth = 3;
+    if (stage < 11) {
+      // Continuous Pulsing Ring for 10 seconds
+      const pulseRadius = size * 1.3 + Math.sin(this.abilityTimer * 0.15) * (size * 0.3);
+      ctx.strokeStyle = style.secondary;
+      ctx.lineWidth = 3 + Math.floor(stage / 2);
       ctx.beginPath();
-      ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+      ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
       ctx.stroke();
-    } else if (this.element === 'shadow') {
-      ctx.fillStyle = "rgba(49, 27, 146, 0.4)";
-      ctx.beginPath();
-      ctx.arc(0, 0, size * 1.4, 0, Math.PI * 2);
-      ctx.fill();
+    } else {
+      // Stage 11+ Elemental Visual Effects
+      if (this.element === 'lightning') {
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 4; i++) {
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          let lx = 0, ly = 0;
+          for (let j = 0; j < 5; j++) {
+            lx += (Math.random() - 0.5) * (size * 1.2);
+            ly += (Math.random() - 0.5) * (size * 1.2);
+            ctx.lineTo(lx, ly);
+          }
+          ctx.stroke();
+        }
+      } else if (this.element === 'water') {
+        const ringRadius = ((600 - this.abilityTimer) % 90) * (size * 0.04);
+        ctx.strokeStyle = "rgba(0, 229, 255, 0.85)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (this.element === 'shadow') {
+        ctx.fillStyle = "rgba(49, 27, 146, 0.45)";
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     ctx.restore();
@@ -671,7 +737,7 @@ function renderStudentRoster(students) {
   initIcons();
 }
 
-// Point Awarding Action with Elemental Ability Activation
+// Point Awarding Action with Ability Trigger for ALL Levels
 document.getElementById("submitActivityBtn")?.addEventListener("click", async () => {
   const checkedBoxes = document.querySelectorAll(".student-checkbox:checked");
   const selectedStudents = Array.from(checkedBoxes).map(cb => cb.value);
@@ -700,7 +766,7 @@ document.getElementById("submitActivityBtn")?.addEventListener("click", async ()
     const turtle = turtles.find(t => t.name === studentName);
     if (turtle) {
       turtle.points += points;
-      turtle.triggerAbility(); // Triggers elemental ability effect
+      turtle.triggerAbility(); // Triggers 10-second ability animation for any level
     }
   });
 
