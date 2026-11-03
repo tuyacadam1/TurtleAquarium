@@ -58,16 +58,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  document.getElementById("closeModalBtn").addEventListener("click", () => {
-    document.getElementById("activityModal").style.display = "none";
-  });
+  const closeModalBtn = document.getElementById("closeModalBtn");
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener("click", () => {
+      document.getElementById("activityModal").style.display = "none";
+    });
+  }
 
   // Bulk Selection Helpers
-  document.getElementById("selectAllStudentsBtn").addEventListener("click", () => {
+  document.getElementById("selectAllStudentsBtn")?.addEventListener("click", () => {
     document.querySelectorAll(".student-checkbox").forEach(cb => cb.checked = true);
   });
 
-  document.getElementById("deselectAllStudentsBtn").addEventListener("click", () => {
+  document.getElementById("deselectAllStudentsBtn")?.addEventListener("click", () => {
     document.querySelectorAll(".student-checkbox").forEach(cb => cb.checked = false);
   });
 });
@@ -77,6 +80,7 @@ const canvas = document.getElementById("aquariumCanvas");
 const ctx = canvas.getContext("2d");
 
 function resizeCanvas() {
+  if (!canvas || !canvas.parentElement) return;
   canvas.width = canvas.parentElement.clientWidth;
   canvas.height = canvas.parentElement.clientHeight;
 }
@@ -102,45 +106,105 @@ class Particle {
   }
 }
 
-// Evolutionary Turtle Rendering Engine
+// Evolutionary & Elemental Turtle Engine
 class Turtle {
   constructor(name, points) {
     this.name = name;
     this.points = points;
     const padding = 80;
-    this.x = Math.random() * Math.max(100, canvas.width - padding * 2) + padding;
-    this.y = Math.random() * Math.max(100, canvas.height - padding * 2) + padding;
+    const w = canvas.width || 800;
+    const h = canvas.height || 600;
+    this.x = Math.random() * Math.max(100, w - padding * 2) + padding;
+    this.y = Math.random() * Math.max(100, h - padding * 2) + padding;
     this.speed = 1.0 + Math.random() * 0.5;
     this.angle = Math.random() * Math.PI * 2;
     this.flipperSwimTimer = Math.random() * 100;
     this.hueShift = Math.random() * 360;
+
+    // Randomize permanent elemental branch for 1000+ points
+    const elements = ['lightning', 'water', 'fire', 'shadow', 'celestial'];
+    this.element = elements[Math.floor(Math.random() * elements.length)];
   }
 
+  // Evolves every 100 points indefinitely
   getStage() {
-    if (this.points < 100) return 1;
-    if (this.points < 200) return 2;
-    if (this.points < 350) return 3;
-    if (this.points < 500) return 4;
-    if (this.points < 750) return 5;
-    if (this.points < 1000) return 6;
-    return 6 + Math.floor((this.points - 1000) / 250);
+    return Math.max(1, Math.floor(this.points / 100) + 1);
   }
 
   getSize() {
     const scaleFactor = canvas.width < 600 ? 0.75 : 1;
-    const baseSize = 24 + Math.sqrt(Math.max(0, this.points)) * 2.8; 
-    return Math.min(baseSize, 140) * scaleFactor;
+    // Base size grows every 100 points, capping visually at 150px
+    const baseSize = 24 + (this.getStage() - 1) * 6; 
+    return Math.min(baseSize, 150) * scaleFactor;
   }
 
   getStageTitle() {
     const stage = this.getStage();
+    
+    // Stages under 1000 pts (Stage 1 to 10)
     if (stage === 1) return "Hatchling";
     if (stage === 2) return "Armored Shell";
     if (stage === 3) return "Mystic Cyber";
     if (stage === 4) return "Cosmic Leviathan";
-    if (stage === 5) return "Ocean Dragon";
-    if (stage === 6) return "Abyssal Leviathan";
-    return `Celestial Overlord T-${stage - 6}`;
+    if (stage === 5) return "Ocean Guardian";
+    if (stage === 6) return "Abyssal Drake";
+    if (stage === 7) return "Titan Shell";
+    if (stage === 8) return "Prismatic Behemoth";
+    if (stage === 9) return "Elder Leviathan";
+    if (stage === 10) return "Ascended Warden";
+
+    // Stage 11+ (1000+ points) - Elemental Evolution Path
+    const elementalTitles = {
+      lightning: "Storm-Forged Raiju",
+      water: "Tidal Abyss Sovereign",
+      fire: "Infernal Sun-Crusher",
+      shadow: "Void Stalker",
+      celestial: "Astral Galaxy Titan"
+    };
+
+    const elementTitle = elementalTitles[this.element] || "Elemental Overlord";
+    return `${elementTitle} (Tier ${stage - 10})`;
+  }
+
+  getElementColors() {
+    const stage = this.getStage();
+
+    // Standard progression (under 1000 points)
+    if (stage < 11) {
+      const palette = [
+        { primary: "#2e7d32", secondary: "#81c784", aura: "rgba(76, 175, 80, 0.4)" },   // 0-99
+        { primary: "#00838f", secondary: "#4dd0e1", aura: "rgba(0, 188, 212, 0.5)" },   // 100-199
+        { primary: "#6a1b9a", secondary: "#ba68c8", aura: "rgba(156, 39, 176, 0.6)" },  // 200-299
+        { primary: "#f57f17", secondary: "#fff176", aura: "rgba(255, 215, 0, 0.7)" },   // 300-399
+        { primary: "#c62828", secondary: "#ff8a80", aura: "rgba(255, 82, 82, 0.8)" },   // 400-499
+        { primary: "#283593", secondary: "#7986cb", aura: "rgba(63, 81, 181, 0.8)" },   // 500-599
+        { primary: "#00695c", secondary: "#80cbc4", aura: "rgba(0, 150, 136, 0.8)" },   // 600-699
+        { primary: "#d81b60", secondary: "#ff80ab", aura: "rgba(233, 30, 99, 0.8)" },   // 700-799
+        { primary: "#ef6c00", secondary: "#ffb74d", aura: "rgba(255, 152, 0, 0.8)" },   // 800-899
+        { primary: "#4e342e", secondary: "#bcaaa4", aura: "rgba(121, 85, 72, 0.8)" }    // 900-999
+      ];
+      return palette[(stage - 1) % palette.length];
+    }
+
+    // Randomized Elemental Styles (1000+ points)
+    switch (this.element) {
+      case 'lightning':
+        return { primary: "#ffd600", secondary: "#ffffff", aura: "rgba(255, 235, 59, 0.95)", particle: "#ffff8d" };
+      case 'water':
+        return { primary: "#0288d1", secondary: "#80deea", aura: "rgba(3, 169, 244, 0.9)", particle: "#00e5ff" };
+      case 'fire':
+        return { primary: "#dd2c00", secondary: "#ffab00", aura: "rgba(255, 61, 0, 0.95)", particle: "#ff6d00" };
+      case 'shadow':
+        return { primary: "#311b92", secondary: "#ea80fc", aura: "rgba(103, 58, 183, 0.9)", particle: "#d500f9" };
+      case 'celestial':
+      default:
+        return { 
+          primary: `hsl(${this.hueShift}, 85%, 50%)`, 
+          secondary: `hsl(${(this.hueShift + 60) % 360}, 100%, 75%)`, 
+          aura: `hsla(${this.hueShift}, 100%, 65%, 0.9)`,
+          particle: "#ffffff"
+        };
+    }
   }
 
   update() {
@@ -167,9 +231,11 @@ class Turtle {
       this.angle = Math.atan2(-Math.abs(Math.sin(this.angle)), Math.cos(this.angle));
     }
 
-    if (this.getStage() >= 3 && Math.random() < 0.35) {
-      const colors = ["#80deea", "#b388ff", "#ffd54f", "#ff80ab", "#00e676"];
-      particles.push(new Particle(this.x, this.y, colors[this.getStage() % colors.length]));
+    // Particle trails scale up with stage
+    const stage = this.getStage();
+    if (stage >= 3 && Math.random() < Math.min(0.8, 0.2 + stage * 0.05)) {
+      const colors = this.getElementColors();
+      particles.push(new Particle(this.x, this.y, colors.particle || colors.secondary));
     }
   }
 
@@ -177,47 +243,31 @@ class Turtle {
     const stage = this.getStage();
     const size = this.getSize();
     const flipperAngle = Math.sin(this.flipperSwimTimer) * 0.35;
+    const style = this.getElementColors();
 
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle + Math.PI / 2);
 
-    let primaryColor = "#2e7d32"; 
-    let secondaryColor = "#81c784"; 
-    let auraColor = "rgba(76, 175, 80, 0.4)";
-
-    if (stage === 2) {
-      primaryColor = "#00838f"; secondaryColor = "#4dd0e1"; auraColor = "rgba(0, 188, 212, 0.5)";
-    } else if (stage === 3) {
-      primaryColor = "#6a1b9a"; secondaryColor = "#ba68c8"; auraColor = "rgba(156, 39, 176, 0.6)";
-    } else if (stage === 4) {
-      primaryColor = "#f57f17"; secondaryColor = "#fff176"; auraColor = "rgba(255, 215, 0, 0.7)";
-    } else if (stage === 5) {
-      primaryColor = "#c62828"; secondaryColor = "#ff8a80"; auraColor = "rgba(255, 82, 82, 0.8)";
-    } else if (stage >= 6) {
-      primaryColor = `hsl(${this.hueShift}, 85%, 45%)`;
-      secondaryColor = `hsl(${(this.hueShift + 60) % 360}, 100%, 75%)`;
-      auraColor = `hsla(${this.hueShift}, 100%, 65%, 0.9)`;
-    }
-
+    // Dynamic Glow Aura
     if (stage >= 2) {
-      ctx.shadowBlur = 12 + stage * 4;
-      ctx.shadowColor = auraColor;
+      ctx.shadowBlur = Math.min(40, 10 + stage * 3);
+      ctx.shadowColor = style.aura;
     }
 
-    // Celestial Halo (Stage 6+)
-    if (stage >= 6) {
+    // Elemental Crown / Halo for 1000+ points
+    if (stage >= 11) {
       ctx.save();
-      ctx.strokeStyle = secondaryColor;
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = style.secondary;
+      ctx.lineWidth = 3 + Math.floor((stage - 10) / 2);
       ctx.beginPath();
-      ctx.ellipse(0, -size * 1.15, size * 0.45, size * 0.15, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -size * 1.2, size * 0.5, size * 0.15, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
 
     // Left Flipper
-    ctx.fillStyle = primaryColor;
+    ctx.fillStyle = style.primary;
     ctx.save();
     ctx.translate(-size * 0.55, -size * 0.25);
     ctx.rotate(-0.5 + flipperAngle);
@@ -232,7 +282,7 @@ class Turtle {
     ctx.restore();
 
     // Head
-    ctx.fillStyle = primaryColor;
+    ctx.fillStyle = style.primary;
     ctx.beginPath(); ctx.arc(0, -size * 0.75, size * 0.3, 0, Math.PI * 2); ctx.fill();
 
     // Eyes
@@ -242,20 +292,20 @@ class Turtle {
     ctx.arc(size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
     ctx.fill();
 
-    // Pupils
-    ctx.fillStyle = "#000000";
+    // Pupils (Glow matching secondary color at 1000+ pts)
+    ctx.fillStyle = stage >= 11 ? style.secondary : "#000000";
     ctx.beginPath();
     ctx.arc(-size * 0.12, -size * 0.87, size * 0.03, 0, Math.PI * 2);
     ctx.arc(size * 0.12, -size * 0.87, size * 0.03, 0, Math.PI * 2);
     ctx.fill();
 
     // Shell Body
-    ctx.fillStyle = primaryColor;
+    ctx.fillStyle = style.primary;
     ctx.beginPath(); ctx.ellipse(0, 0, size * 0.65, size * 0.8, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.lineWidth = 2.5; ctx.strokeStyle = secondaryColor; ctx.stroke();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = style.secondary; ctx.stroke();
 
     // Hex Pattern
-    ctx.strokeStyle = secondaryColor;
+    ctx.strokeStyle = style.secondary;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     const hexRadius = size * 0.25;
@@ -288,7 +338,7 @@ class Turtle {
     ctx.textAlign = "center";
     ctx.fillText(`${this.name}`, this.x, this.y + size + 16);
 
-    ctx.fillStyle = secondaryColor;
+    ctx.fillStyle = style.secondary;
     ctx.font = "11px 'Fredoka', sans-serif";
     ctx.fillText(`${this.getStageTitle()} • ${this.points} pts`, this.x, this.y + size + 30);
     ctx.restore();
@@ -299,8 +349,8 @@ class Turtle {
 async function fetchSheetData() {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
     classroomData = {
-      "Mr. Smith": { "Science Section A": [{ name: "Alex", totalPoints: 50, activities: [{ activity: "Quiz 1", points: 50, date: new Date().toLocaleDateString() }] }] },
-      "Ms. Davis": { "Math Grade 5": [{ name: "Emma", totalPoints: 30, activities: [{ activity: "Homework 1", points: 30, date: new Date().toLocaleDateString() }] }] }
+      "Mr. Smith": { "Science Section A": [{ name: "Alex", totalPoints: 1050, activities: [{ activity: "Quiz 1", points: 1050, date: new Date().toLocaleDateString() }] }] },
+      "Ms. Davis": { "Math Grade 5": [{ name: "Emma", totalPoints: 350, activities: [{ activity: "Homework 1", points: 350, date: new Date().toLocaleDateString() }] }] }
     };
     updateTeacherDropdown();
     return;
@@ -309,12 +359,12 @@ async function fetchSheetData() {
   try {
     const res = await fetch(APPS_SCRIPT_URL);
     classroomData = await res.json();
-    if (Object.keys(classroomData).length === 0) {
+    if (!classroomData || Object.keys(classroomData).length === 0) {
       classroomData = { "Default Teacher": { "Class 1": [] } };
     }
     updateTeacherDropdown();
   } catch (err) {
-    console.error("Fetch error:", err);
+    console.warn("Using offline fallback data:", err);
     if (Object.keys(classroomData).length === 0) {
       classroomData = { "Default Teacher": { "Class 1": [] } };
     }
@@ -324,6 +374,7 @@ async function fetchSheetData() {
 
 function updateTeacherDropdown() {
   const dropdown = document.getElementById("teacherDropdown");
+  if (!dropdown) return;
   dropdown.innerHTML = "";
 
   const teachers = Object.keys(classroomData);
@@ -333,13 +384,14 @@ function updateTeacherDropdown() {
     dropdown.appendChild(opt);
   });
 
-  if (!activeTeacher || !classroomData[activeTeacher]) activeTeacher = teachers[0];
+  if (!activeTeacher || !classroomData[activeTeacher]) activeTeacher = teachers[0] || "";
   dropdown.value = activeTeacher;
   updateClassDropdown();
 }
 
 function updateClassDropdown() {
   const dropdown = document.getElementById("classDropdown");
+  if (!dropdown) return;
   dropdown.innerHTML = "";
 
   const teacherClasses = classroomData[activeTeacher] || {};
@@ -379,6 +431,7 @@ function loadClassroom(className) {
 
 function populateStudentCheckboxes(students) {
   const container = document.getElementById("studentCheckboxContainer");
+  if (!container) return;
   container.innerHTML = "";
 
   if (students.length === 0) {
@@ -404,6 +457,7 @@ function populateStudentCheckboxes(students) {
 
 function populateActivityHistory(students) {
   const datalist = document.getElementById("activityHistoryList");
+  if (!datalist) return;
   datalist.innerHTML = "";
 
   const uniqueActivities = new Set();
@@ -426,6 +480,7 @@ function populateActivityHistory(students) {
 
 function renderLeaderboard(students) {
   const list = document.getElementById("leaderboardList");
+  if (!list) return;
   list.innerHTML = "";
 
   if (students.length === 0) {
@@ -460,6 +515,7 @@ function renderLeaderboard(students) {
 
 function renderStudentRoster(students) {
   const list = document.getElementById("studentList");
+  if (!list) return;
   list.innerHTML = "";
 
   students.forEach(student => {
@@ -478,7 +534,7 @@ function renderStudentRoster(students) {
 }
 
 // Point Awarding Action
-document.getElementById("submitActivityBtn").addEventListener("click", async () => {
+document.getElementById("submitActivityBtn")?.addEventListener("click", async () => {
   const checkedBoxes = document.querySelectorAll(".student-checkbox:checked");
   const selectedStudents = Array.from(checkedBoxes).map(cb => cb.value);
   const activityTitle = document.getElementById("activityTitleInput").value.trim() || "Activity Points";
@@ -495,6 +551,7 @@ document.getElementById("submitActivityBtn").addEventListener("click", async () 
     const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
     if (student) {
       student.totalPoints += points;
+      if (!student.activities) student.activities = [];
       student.activities.push({
         activity: activityTitle,
         points: points,
@@ -516,22 +573,28 @@ document.getElementById("submitActivityBtn").addEventListener("click", async () 
   document.getElementById("activityPointsInput").value = "";
 
   if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
-    await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "addBulkActivityPoints",
-        teacherName: activeTeacher,
-        className: activeClass,
-        studentsList: selectedStudents,
-        activityName: activityTitle,
-        points: points
-      })
-    });
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "addBulkActivityPoints",
+          teacherName: activeTeacher,
+          className: activeClass,
+          studentsList: selectedStudents,
+          activityName: activityTitle,
+          points: points
+        })
+      });
+    } catch (e) {
+      console.error("Backend sync failed:", e);
+    }
   }
 });
 
 // Modal Display Handler
-function openStudentReport(studentName) {
+window.openStudentReport = function(studentName) {
   selectedStudentForReport = studentName;
   const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
   if (!student) return;
@@ -552,10 +615,10 @@ function openStudentReport(studentName) {
 
   document.getElementById("activityModal").style.display = "flex";
   initIcons();
-}
+};
 
 // Individual Student PDF Generator
-document.getElementById("printSingleReportBtn").addEventListener("click", () => {
+document.getElementById("printSingleReportBtn")?.addEventListener("click", () => {
   const student = classroomData[activeTeacher][activeClass].find(s => s.name === selectedStudentForReport);
   if (!student) return;
 
@@ -595,7 +658,7 @@ document.getElementById("printSingleReportBtn").addEventListener("click", () => 
 });
 
 // Classroom PDF Summary Generator
-document.getElementById("printClassReportBtn").addEventListener("click", () => {
+document.getElementById("printClassReportBtn")?.addEventListener("click", () => {
   const students = (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) ? classroomData[activeTeacher][activeClass] : [];
   const printArea = document.getElementById("printableReport");
 
@@ -633,7 +696,7 @@ document.getElementById("printClassReportBtn").addEventListener("click", () => {
 });
 
 // App Controls
-document.getElementById("createTeacherBtn").addEventListener("click", () => {
+document.getElementById("createTeacherBtn")?.addEventListener("click", () => {
   const input = document.getElementById("newTeacherInput");
   const teacherName = input.value.trim();
   if (!teacherName) return;
@@ -646,7 +709,7 @@ document.getElementById("createTeacherBtn").addEventListener("click", () => {
   updateTeacherDropdown();
 });
 
-document.getElementById("createClassBtn").addEventListener("click", async () => {
+document.getElementById("createClassBtn")?.addEventListener("click", async () => {
   const input = document.getElementById("newClassInput");
   const className = input.value.trim();
   if (!activeTeacher || !className) return;
@@ -658,14 +721,20 @@ document.getElementById("createClassBtn").addEventListener("click", async () => 
   updateClassDropdown();
 
   if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
-    await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "createClassroom", teacherName: activeTeacher, className: className })
-    });
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "createClassroom", teacherName: activeTeacher, className: className })
+      });
+    } catch (e) {
+      console.error("Failed to post class to Apps Script:", e);
+    }
   }
 });
 
-document.getElementById("addStudentsBtn").addEventListener("click", async () => {
+document.getElementById("addStudentsBtn")?.addEventListener("click", async () => {
   const textarea = document.getElementById("bulkStudentInput");
   const names = textarea.value.split("\n").map(n => n.trim()).filter(n => n.length > 0);
   if (!activeTeacher || !activeClass || names.length === 0) return;
@@ -673,27 +742,34 @@ document.getElementById("addStudentsBtn").addEventListener("click", async () => 
   textarea.value = "";
 
   if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
-    await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "addBulkStudents", teacherName: activeTeacher, className: activeClass, students: names })
-    });
-    fetchSheetData();
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "addBulkStudents", teacherName: activeTeacher, className: activeClass, students: names })
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    names.forEach(n => classroomData[activeTeacher][activeClass].push({ name: n, totalPoints: 0, activities: [] }));
+    loadClassroom(activeClass);
   } else {
     names.forEach(n => classroomData[activeTeacher][activeClass].push({ name: n, totalPoints: 0, activities: [] }));
     loadClassroom(activeClass);
   }
 });
 
-document.getElementById("teacherDropdown").addEventListener("change", (e) => {
+document.getElementById("teacherDropdown")?.addEventListener("change", (e) => {
   activeTeacher = e.target.value;
   updateClassDropdown();
 });
 
-document.getElementById("classDropdown").addEventListener("change", (e) => {
+document.getElementById("classDropdown")?.addEventListener("change", (e) => {
   loadClassroom(e.target.value);
 });
 
-document.getElementById("syncSheetBtn").addEventListener("click", fetchSheetData);
+document.getElementById("syncSheetBtn")?.addEventListener("click", fetchSheetData);
 
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
