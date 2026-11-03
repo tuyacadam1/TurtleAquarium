@@ -10,21 +10,20 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykX4o72pPfgO7h
 const DEFAULT_PASSCODE = "fromwombtothetomb";
 
 let classroomData = {};
+let activeTeacher = "";
 let activeClass = "";
 let turtles = [];
 let particles = [];
-let floatingTexts = [];
-let foodPellets = [];
+let selectedStudentForReport = null;
 
-// App Event Listeners Setup
+// Lock Screen & Mobile Navigation
 document.addEventListener("DOMContentLoaded", () => {
-  initIcons();
-
   const overlay = document.getElementById("passwordLockOverlay");
   const input = document.getElementById("passcodeInput");
   const unlockBtn = document.getElementById("unlockBtn");
   const relockBtn = document.getElementById("relockBtn");
   const errorMsg = document.getElementById("lockErrorMessage");
+  
   const sidebar = document.getElementById("appSidebar");
   const toggleSidebarBtn = document.getElementById("toggleSidebarBtn");
 
@@ -55,9 +54,13 @@ document.addEventListener("DOMContentLoaded", () => {
       sidebar.classList.toggle("open");
     });
   }
+
+  document.getElementById("closeModalBtn").addEventListener("click", () => {
+    document.getElementById("activityModal").style.display = "none";
+  });
 });
 
-// Canvas Engine Setup
+// Canvas Setup
 const canvas = document.getElementById("aquariumCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -69,140 +72,68 @@ window.addEventListener("resize", resizeCanvas);
 window.addEventListener("orientationchange", resizeCanvas);
 resizeCanvas();
 
-// Visual Particle Class
 class Particle {
   constructor(x, y, color) {
-    this.x = x;
-    this.y = y;
-    this.color = color;
-    this.size = Math.random() * 3.5 + 1.5;
+    this.x = x; this.y = y; this.color = color;
+    this.size = Math.random() * 3 + 1;
     this.alpha = 1;
-    this.vx = (Math.random() - 0.5) * 1.2;
-    this.vy = (Math.random() - 0.5) * 1.2;
+    this.vx = (Math.random() - 0.5) * 0.8;
+    this.vy = (Math.random() - 0.5) * 0.8;
   }
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.alpha -= 0.02;
-  }
+  update() { this.x += this.vx; this.y += this.vy; this.alpha -= 0.02; }
   draw() {
     ctx.save();
     ctx.globalAlpha = Math.max(0, this.alpha);
     ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 }
 
-// Floating Score Text
-class FloatingText {
-  constructor(x, y, text) {
-    this.x = x;
-    this.y = y;
-    this.text = text;
-    this.alpha = 1;
-    this.vy = -1.5;
-  }
-  update() {
-    this.y += this.vy;
-    this.alpha -= 0.015;
-  }
-  draw() {
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, this.alpha);
-    ctx.fillStyle = "#ffd54f";
-    ctx.font = "bold 18px Fredoka, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(this.text, this.x, this.y);
-    ctx.restore();
-  }
-}
-
-// Food Drop Particle Class
-class FoodPellet {
-  constructor(targetX, targetY) {
-    this.x = targetX + (Math.random() - 0.5) * 40;
-    this.y = 0;
-    this.targetY = targetY;
-    this.speed = 3 + Math.random() * 2;
-    this.size = 5;
-    this.reached = false;
-  }
-  update() {
-    if (this.y < this.targetY) {
-      this.y += this.speed;
-    } else {
-      this.reached = true;
-    }
-  }
-  draw() {
-    if (!this.reached) {
-      ctx.save();
-      ctx.fillStyle = "#ff7043";
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-  }
-}
-
-// Evolving Turtle Vector Class
 class Turtle {
   constructor(name, points) {
     this.name = name;
     this.points = points;
-
-    const padding = 100;
+    const padding = 80;
     this.x = Math.random() * Math.max(100, canvas.width - padding * 2) + padding;
     this.y = Math.random() * Math.max(100, canvas.height - padding * 2) + padding;
-    
-    this.speed = 0.9 + Math.random() * 0.5;
+    this.speed = 1.0 + Math.random() * 0.5;
     this.angle = Math.random() * Math.PI * 2;
     this.flipperSwimTimer = Math.random() * 100;
   }
 
   getStage() {
-    if (this.points < 100) return 1;  
-    if (this.points < 250) return 2;  
-    if (this.points < 500) return 3;  
-    if (this.points < 1000) return 4; 
-    if (this.points < 2000) return 5; 
-    if (this.points < 5000) return 6; 
-    if (this.points < 10000) return 7; 
-    return 7 + Math.floor((this.points - 10000) / 5000); 
+    if (this.points < 100) return 1;
+    if (this.points < 200) return 2;
+    if (this.points < 350) return 3;
+    if (this.points < 500) return 4;
+    if (this.points < 750) return 5;
+    return 5 + Math.floor((this.points - 750) / 250);
   }
 
   getSize() {
     const scaleFactor = canvas.width < 600 ? 0.75 : 1;
-    // Logarithmic curve with continuous growth beyond 1000 pts up to a cap of 240px
-    const baseSize = 22 + Math.sqrt(this.points) * 2.8 + Math.log10(Math.max(1, this.points - 1000 + 1)) * 12; 
-    return Math.min(baseSize, 240) * scaleFactor;
+    const baseSize = 22 + Math.sqrt(Math.max(0, this.points)) * 2.5; 
+    return Math.min(baseSize, 110) * scaleFactor;
   }
 
   getStageTitle() {
     const stage = this.getStage();
     if (stage === 1) return "Hatchling";
-    if (stage === 2) return "Armored Sentinel";
-    if (stage === 3) return "Cyber Mystic";
-    if (stage === 4) return "Solar Leviathan";
-    if (stage === 5) return "Abyssal Leviathan";
-    if (stage === 6) return "Cosmic Sovereign";
-    if (stage === 7) return "Omnipotent Entity";
-    return `Celestial Overlord Rank-${stage - 7}`;
+    if (stage === 2) return "Armored Shell";
+    if (stage === 3) return "Mystic Cyber";
+    if (stage === 4) return "Cosmic Leviathan";
+    if (stage === 5) return "Ocean Dragon";
+    return `Celestial God T-${stage - 5}`;
   }
 
   update() {
-    this.angle += (Math.random() - 0.5) * 0.06;
-
+    this.angle += (Math.random() - 0.5) * 0.08;
     this.x += Math.cos(this.angle) * this.speed;
     this.y += Math.sin(this.angle) * this.speed;
-    this.flipperSwimTimer += 0.07;
+    this.flipperSwimTimer += 0.08;
 
-    const margin = this.getSize() + 40;
-    
+    const margin = this.getSize() + 30;
     if (this.x < margin) {
       this.x = margin;
       this.angle = Math.atan2(Math.sin(this.angle), Math.abs(Math.cos(this.angle)));
@@ -219,10 +150,8 @@ class Turtle {
       this.angle = Math.atan2(-Math.abs(Math.sin(this.angle)), Math.cos(this.angle));
     }
 
-    // Particle frequency increases as turtles reach high ranks
-    const particleChance = Math.min(0.9, 0.2 + this.getStage() * 0.1);
-    if (this.getStage() >= 3 && Math.random() < particleChance) {
-      const colors = ["#80deea", "#b388ff", "#ffd54f", "#ff80ab", "#00e676", "#76ff03", "#ff3d00", "#00e5ff"];
+    if (this.getStage() >= 3 && Math.random() < 0.3) {
+      const colors = ["#80deea", "#b388ff", "#ffd54f", "#ff80ab"];
       particles.push(new Particle(this.x, this.y, colors[this.getStage() % colors.length]));
     }
   }
@@ -230,285 +159,178 @@ class Turtle {
   draw() {
     const stage = this.getStage();
     const size = this.getSize();
-    const flipperSwing = Math.sin(this.flipperSwimTimer) * 0.4;
+    const flipperAngle = Math.sin(this.flipperSwimTimer) * 0.35;
 
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle + Math.PI / 2);
 
-    let shellBase = "#2e7d32";
-    let shellPlate = "#81c784";
-    let skinColor = "#1b5e20";
-    let auraGlow = "rgba(76, 175, 80, 0.4)";
+    let primaryColor = "#2e7d32"; 
+    let secondaryColor = "#81c784"; 
+    let auraColor = "rgba(76, 175, 80, 0.4)";
 
-    if (stage === 2) { 
-      shellBase = "#006064"; shellPlate = "#4dd0e1"; skinColor = "#004d40"; auraGlow = "rgba(0, 188, 212, 0.5)";
-    } else if (stage === 3) { 
-      shellBase = "#4a148c"; shellPlate = "#e040fb"; skinColor = "#311b92"; auraGlow = "rgba(156, 39, 176, 0.6)";
-    } else if (stage === 4) { 
-      shellBase = "#e65100"; shellPlate = "#ffd54f"; skinColor = "#bf360c"; auraGlow = "rgba(255, 193, 7, 0.7)";
-    } else if (stage === 5) { 
-      shellBase = "#880e4f"; shellPlate = "#ff80ab"; skinColor = "#4a0072"; auraGlow = "rgba(255, 64, 129, 0.85)";
-    } else if (stage === 6) { 
-      shellBase = "#1a237e"; shellPlate = "#00e5ff"; skinColor = "#0d47a1"; auraGlow = "rgba(0, 229, 255, 0.9)";
-    } else if (stage >= 7) { 
-      // Dynamic pulsing colors for end-game ranks
-      const hue = (Date.now() / 20 + stage * 45) % 360;
-      shellBase = `hsl(${hue}, 80%, 20%)`;
-      shellPlate = `hsl(${hue}, 100%, 70%)`;
-      skinColor = `hsl(${hue}, 90%, 12%)`;
-      auraGlow = `hsla(${hue}, 100%, 60%, 0.95)`;
-    }
+    if (stage === 2) { primaryColor = "#00838f"; secondaryColor = "#4dd0e1"; auraColor = "rgba(0, 188, 212, 0.5)"; }
+    if (stage === 3) { primaryColor = "#6a1b9a"; secondaryColor = "#ba68c8"; auraColor = "rgba(156, 39, 176, 0.6)"; }
+    if (stage === 4) { primaryColor = "#f57f17"; secondaryColor = "#fff176"; auraColor = "rgba(255, 215, 0, 0.7)"; }
+    if (stage >= 5) { primaryColor = "#c62828"; secondaryColor = "#ff8a80"; auraColor = "rgba(255, 82, 82, 0.8)"; }
 
     if (stage >= 2) {
-      ctx.shadowBlur = 14 + stage * 5;
-      ctx.shadowColor = auraGlow;
+      ctx.shadowBlur = 12 + stage * 3;
+      ctx.shadowColor = auraColor;
     }
 
-    ctx.fillStyle = skinColor;
-    
-    // Stage Specific Flippers
-    if (stage === 1) { 
-      ctx.save();
-      ctx.translate(-size * 0.55, -size * 0.25);
-      ctx.rotate(-0.5 + flipperSwing);
-      ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
+    // Flippers
+    ctx.fillStyle = primaryColor;
+    ctx.save();
+    ctx.translate(-size * 0.55, -size * 0.25);
+    ctx.rotate(-0.5 + flipperAngle);
+    ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
 
-      ctx.save();
-      ctx.translate(size * 0.55, -size * 0.25);
-      ctx.rotate(0.5 - flipperSwing);
-      ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    } else if (stage === 2) { 
-      ctx.save();
-      ctx.translate(-size * 0.6, -size * 0.2);
-      ctx.rotate(-0.6 + flipperSwing);
-      ctx.beginPath();
-      ctx.moveTo(0, 0); ctx.lineTo(-size * 0.6, -size * 0.2); ctx.lineTo(-size * 0.4, size * 0.2);
-      ctx.closePath(); ctx.fill();
-      ctx.restore();
-
-      ctx.save();
-      ctx.translate(size * 0.6, -size * 0.2);
-      ctx.rotate(0.6 - flipperSwing);
-      ctx.beginPath();
-      ctx.moveTo(0, 0); ctx.lineTo(size * 0.6, -size * 0.2); ctx.lineTo(size * 0.4, size * 0.2);
-      ctx.closePath(); ctx.fill();
-      ctx.restore();
-    } else { 
-      ctx.save();
-      ctx.translate(-size * 0.65, -size * 0.25);
-      ctx.rotate(-0.5 + flipperSwing);
-      ctx.beginPath(); ctx.ellipse(0, 0, size * 0.6, size * 0.22, -0.2, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-
-      ctx.save();
-      ctx.translate(size * 0.65, -size * 0.25);
-      ctx.rotate(0.5 - flipperSwing);
-      ctx.beginPath(); ctx.ellipse(0, 0, size * 0.6, size * 0.22, 0.2, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
-
-    // Tail
-    ctx.beginPath();
-    ctx.moveTo(-size * 0.1, size * 0.75);
-    ctx.lineTo(0, size * 1.1);
-    ctx.lineTo(size * 0.1, size * 0.75);
-    ctx.closePath();
-    ctx.fill();
+    ctx.save();
+    ctx.translate(size * 0.55, -size * 0.25);
+    ctx.rotate(0.5 - flipperAngle);
+    ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
 
     // Head
-    ctx.fillStyle = skinColor;
-    ctx.beginPath();
-    ctx.arc(0, -size * 0.75, size * 0.32, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = primaryColor;
+    ctx.beginPath(); ctx.arc(0, -size * 0.75, size * 0.3, 0, Math.PI * 2); ctx.fill();
 
-    // Eyes
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
-    ctx.arc(-size * 0.12, -size * 0.85, size * 0.08, 0, Math.PI * 2);
-    ctx.arc(size * 0.12, -size * 0.85, size * 0.08, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#000000";
-    ctx.beginPath();
-    ctx.arc(-size * 0.12, -size * 0.87, size * 0.04, 0, Math.PI * 2);
-    ctx.arc(size * 0.12, -size * 0.87, size * 0.04, 0, Math.PI * 2);
+    ctx.arc(-size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
+    ctx.arc(size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
     ctx.fill();
 
-    // Head Ornaments & Crown Evolutions
-    if (stage === 2) { 
-      ctx.fillStyle = shellPlate;
-      ctx.beginPath();
-      ctx.arc(0, -size * 0.85, size * 0.2, Math.PI, 0);
-      ctx.fill();
-    } else if (stage === 3) { 
-      ctx.strokeStyle = shellPlate;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(-size * 0.1, -size * 0.9); ctx.lineTo(-size * 0.3, -size * 1.2);
-      ctx.moveTo(size * 0.1, -size * 0.9); ctx.lineTo(size * 0.3, -size * 1.2);
-      ctx.stroke();
-    } else if (stage === 4) { 
-      ctx.fillStyle = "#ffd54f";
-      ctx.beginPath();
-      ctx.moveTo(-size * 0.25, -size * 0.95);
-      ctx.lineTo(0, -size * 1.35);
-      ctx.lineTo(size * 0.25, -size * 0.95);
-      ctx.closePath();
-      ctx.fill();
-    } else if (stage === 5) { 
-      ctx.fillStyle = "#ff80ab";
-      ctx.beginPath();
-      ctx.moveTo(-size * 0.15, -size * 0.9); ctx.lineTo(-size * 0.4, -size * 1.4); ctx.lineTo(-size * 0.05, -size * 1.0);
-      ctx.moveTo(size * 0.15, -size * 0.9); ctx.lineTo(size * 0.4, -size * 1.4); ctx.lineTo(size * 0.05, -size * 1.0);
-      ctx.fill();
-    } else if (stage >= 6) {
-      // Celestial Halo & Spire Crown
-      ctx.strokeStyle = shellPlate;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(0, -size * 1.1, size * 0.35, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.fillStyle = shellPlate;
-      ctx.beginPath();
-      ctx.moveTo(-size * 0.2, -size * 0.95);
-      ctx.lineTo(0, -size * 1.5);
-      ctx.lineTo(size * 0.2, -size * 0.95);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // Main Shell Base
-    ctx.fillStyle = shellBase;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, size * 0.68, size * 0.82, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = shellPlate;
-    ctx.stroke();
-
-    // Shell Crest Pattern
-    ctx.fillStyle = shellPlate;
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.4)";
-
-    if (stage === 1) { 
-      ctx.beginPath();
-      ctx.arc(0, -size * 0.1, size * 0.25, 0, Math.PI * 2);
-      ctx.fill(); ctx.stroke();
-    } else if (stage === 2) { 
-      ctx.fillRect(-size * 0.3, -size * 0.4, size * 0.6, size * 0.25);
-      ctx.fillRect(-size * 0.3, 0, size * 0.6, size * 0.25);
-    } else if (stage === 3) { 
-      ctx.beginPath();
-      ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
-      ctx.fill(); ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(0, 0, size * 0.18, 0, Math.PI * 2);
-      ctx.fillStyle = "#ffffff"; ctx.fill();
-    } else if (stage === 4) { 
-      ctx.beginPath();
-      ctx.moveTo(0, -size * 0.45);
-      ctx.lineTo(size * 0.35, 0);
-      ctx.lineTo(0, size * 0.45);
-      ctx.lineTo(-size * 0.35, 0);
-      ctx.closePath();
-      ctx.fill(); ctx.stroke();
-    } else if (stage >= 5) {
-      // Complex geometry & expanding star emblem
-      const pointsCount = Math.min(12, 5 + (stage - 5) * 2);
-      ctx.beginPath();
-      for (let i = 0; i < pointsCount; i++) {
-        const rad = (i * Math.PI * 2) / pointsCount;
-        const r = i % 2 === 0 ? size * 0.45 : size * 0.22;
-        const px = Math.cos(rad) * r;
-        const py = Math.sin(rad) * r;
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.closePath();
-      ctx.fill(); ctx.stroke();
-    }
+    // Shell
+    ctx.fillStyle = primaryColor;
+    ctx.beginPath(); ctx.ellipse(0, 0, size * 0.65, size * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = secondaryColor; ctx.stroke();
 
     ctx.restore();
 
-    // Floating Name & Status Label
+    // Text Label
     ctx.save();
-    ctx.shadowBlur = 0;
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 13px Fredoka, sans-serif";
+    ctx.font = "bold 13px 'Fredoka', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(`${this.name}`, this.x, this.y + size + 18);
+    ctx.fillText(`${this.name}`, this.x, this.y + size + 16);
 
-    ctx.fillStyle = shellPlate;
-    ctx.font = "11px Fredoka, sans-serif";
-    ctx.fillText(`${this.getStageTitle()} • ${this.points} pts`, this.x, this.y + size + 32);
+    ctx.fillStyle = secondaryColor;
+    ctx.font = "11px 'Fredoka', sans-serif";
+    ctx.fillText(`${this.getStageTitle()} • ${this.points} pts`, this.x, this.y + size + 30);
     ctx.restore();
   }
 }
 
-// Google Apps Script Sync Operations
+// Data Sync & Multi-Teacher Handling
 async function fetchSheetData() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
+    classroomData = {
+      "Mr. Smith": { "Science Section A": [{ name: "Alex", totalPoints: 50, activities: [{ activity: "Quiz 1", points: 50, date: new Date().toLocaleDateString() }] }] },
+      "Ms. Davis": { "Math Grade 5": [{ name: "Emma", totalPoints: 30, activities: [{ activity: "Homework 1", points: 30, date: new Date().toLocaleDateString() }] }] }
+    };
+    updateTeacherDropdown();
+    return;
+  }
+
   try {
     const res = await fetch(APPS_SCRIPT_URL);
     classroomData = await res.json();
-    updateClassDropdown();
+    if (Object.keys(classroomData).length === 0) {
+      classroomData = { "Default Teacher": { "Class 1": [] } };
+    }
+    updateTeacherDropdown();
   } catch (err) {
-    console.error("Failed to fetch data from Google Apps Script Web App API:", err);
+    console.error("Sheet Sync Fetch Error:", err);
+    if (Object.keys(classroomData).length === 0) {
+      classroomData = { "Default Teacher": { "Class 1": [] } };
+    }
+    updateTeacherDropdown();
   }
+}
+
+function updateTeacherDropdown() {
+  const dropdown = document.getElementById("teacherDropdown");
+  dropdown.innerHTML = "";
+
+  const teachers = Object.keys(classroomData);
+  teachers.forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t; opt.textContent = t;
+    dropdown.appendChild(opt);
+  });
+
+  if (!activeTeacher || !classroomData[activeTeacher]) activeTeacher = teachers[0];
+  dropdown.value = activeTeacher;
+  updateClassDropdown();
 }
 
 function updateClassDropdown() {
   const dropdown = document.getElementById("classDropdown");
   dropdown.innerHTML = "";
 
-  const classNames = Object.keys(classroomData);
+  const teacherClasses = classroomData[activeTeacher] || {};
+  const classNames = Object.keys(teacherClasses);
+
   if (classNames.length === 0) {
-    dropdown.innerHTML = `<option value="">No classrooms found</option>`;
+    dropdown.innerHTML = `<option value="">No classes created yet</option>`;
+    activeClass = "";
+    loadClassroom("");
     return;
   }
 
-  classNames.forEach(name => {
+  classNames.forEach(c => {
     const opt = document.createElement("option");
-    opt.value = name;
-    opt.textContent = name;
+    opt.value = c; opt.textContent = c;
     dropdown.appendChild(opt);
   });
 
-  if (!activeClass) activeClass = classNames[0];
+  if (!activeClass || !teacherClasses[activeClass]) activeClass = classNames[0];
   dropdown.value = activeClass;
   loadClassroom(activeClass);
 }
 
 function loadClassroom(className) {
   activeClass = className;
-  document.getElementById("activeClassTitle").textContent = `Class: ${className}`;
+  document.getElementById("activeClassTitle").textContent = className ? `Class: ${className}` : "No Class Selected";
+  document.getElementById("activeTeacherSubtitle").textContent = `Teacher: ${activeTeacher || "None"}`;
 
-  const students = classroomData[className] || [];
-  turtles = students.map(s => new Turtle(s.name, s.points));
+  const students = (classroomData[activeTeacher] && classroomData[activeTeacher][className]) ? classroomData[activeTeacher][className] : [];
+  turtles = students.map(s => new Turtle(s.name, s.totalPoints));
 
+  populateStudentDropdown(students);
   renderLeaderboard(students);
-  renderStudentFeedList(students);
+  renderStudentRoster(students);
 }
 
+function populateStudentDropdown(students) {
+  const dropdown = document.getElementById("studentSelectDropdown");
+  dropdown.innerHTML = `<option value="">Select student...</option>`;
+  students.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.name;
+    opt.textContent = s.name;
+    dropdown.appendChild(opt);
+  });
+}
+
+// Dense Ranking Leaderboard
 function renderLeaderboard(students) {
-  const leaderboardList = document.getElementById("leaderboardList");
-  leaderboardList.innerHTML = "";
+  const list = document.getElementById("leaderboardList");
+  list.innerHTML = "";
 
   if (students.length === 0) {
-    leaderboardList.innerHTML = `<div class="empty-msg">No students added yet</div>`;
+    list.innerHTML = `<div class="empty-msg">No students ranked yet</div>`;
     return;
   }
 
-  // Sort students descending by points
-  const sorted = [...students].sort((a, b) => b.points - a.points);
-
-  // Dense ranking algorithm for equal point ties
+  const sorted = [...students].sort((a, b) => b.totalPoints - a.totalPoints);
+  
   let currentRank = 1;
   sorted.forEach((student, index) => {
-    if (index > 0 && student.points < sorted[index - 1].points) {
+    if (index > 0 && student.totalPoints < sorted[index - 1].totalPoints) {
       currentRank = index + 1;
     }
 
@@ -523,13 +345,13 @@ function renderLeaderboard(students) {
 
     item.innerHTML = `
       <span><span class="rank-badge">${medal}</span> <b>${student.name}</b></span>
-      <span>${student.points} pts</span>
+      <span>${student.totalPoints} pts</span>
     `;
-    leaderboardList.appendChild(item);
+    list.appendChild(item);
   });
 }
 
-function renderStudentFeedList(students) {
+function renderStudentRoster(students) {
   const list = document.getElementById("studentList");
   list.innerHTML = "";
 
@@ -537,99 +359,181 @@ function renderStudentFeedList(students) {
     const card = document.createElement("div");
     card.className = "student-card";
     card.innerHTML = `
-      <span><b>${student.name}</b> (${student.points} pts)</span>
-      <div class="feed-btn-group">
-        <button class="feed-btn" onclick="feedStudent('${student.name}', 10)">+10</button>
-        <button class="feed-btn" onclick="feedStudent('${student.name}', 25)">+25</button>
-        <button class="feed-btn" onclick="feedStudent('${student.name}', 50)">+50</button>
-      </div>
+      <span><b>${student.name}</b> (${student.totalPoints} pts)</span>
+      <button class="btn primary" style="padding: 4px 8px; font-size: 11px;" onclick="openStudentReport('${student.name}')">📋 Report</button>
     `;
     list.appendChild(card);
   });
 }
 
-async function feedStudent(studentName, points) {
-  const turtle = turtles.find(t => t.name === studentName);
-  if (turtle) {
-    turtle.points += points;
-    
-    floatingTexts.push(new FloatingText(turtle.x, turtle.y - turtle.getSize(), `${points >= 0 ? '+' : ''}${points} Pts!`));
-    foodPellets.push(new FoodPellet(turtle.x, turtle.y));
-  }
+// Award Activity Points
+document.getElementById("submitActivityBtn").addEventListener("click", async () => {
+  const studentName = document.getElementById("studentSelectDropdown").value;
+  const activityTitle = document.getElementById("activityTitleInput").value.trim() || "Activity Points";
+  const points = parseInt(document.getElementById("activityPointsInput").value, 10);
 
-  const student = classroomData[activeClass].find(s => s.name === studentName);
-  if (student) student.points += points;
-
-  renderLeaderboard(classroomData[activeClass]);
-  renderStudentFeedList(classroomData[activeClass]);
-
-  await fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "feedTurtle",
-      className: activeClass,
-      studentName: studentName,
-      points: points
-    })
-  });
-}
-
-// Custom Feeding Event Handler
-document.getElementById("applyCustomFeedBtn").addEventListener("click", () => {
-  const customVal = parseInt(document.getElementById("customPointsInput").value, 10);
-  if (isNaN(customVal) || customVal === 0) {
-    alert("Please enter a valid numeric points value (e.g. 17 or 18).");
+  if (!activeTeacher || !activeClass || !studentName || isNaN(points)) {
+    alert("Please select a teacher, class, student, and enter valid points!");
     return;
   }
 
-  const studentName = prompt("Enter student name to feed custom points:");
-  if (!studentName) return;
-
-  const student = (classroomData[activeClass] || []).find(s => s.name.toLowerCase() === studentName.trim().toLowerCase());
+  const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
   if (student) {
-    feedStudent(student.name, customVal);
-    document.getElementById("customPointsInput").value = "";
-  } else {
-    alert("Student not found in active classroom!");
+    student.totalPoints += points;
+    student.activities.push({
+      activity: activityTitle,
+      points: points,
+      date: new Date().toLocaleDateString()
+    });
+  }
+
+  const turtle = turtles.find(t => t.name === studentName);
+  if (turtle) turtle.points += points;
+
+  renderLeaderboard(classroomData[activeTeacher][activeClass]);
+  renderStudentRoster(classroomData[activeTeacher][activeClass]);
+
+  document.getElementById("activityTitleInput").value = "";
+  document.getElementById("activityPointsInput").value = "";
+
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
+    await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "addActivityPoints",
+        teacherName: activeTeacher,
+        className: activeClass,
+        studentName: studentName,
+        activityName: activityTitle,
+        points: points
+      })
+    });
   }
 });
 
-// User Dashboard Forms
+// PDF / Modal Handlers
+function openStudentReport(studentName) {
+  selectedStudentForReport = studentName;
+  const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
+  if (!student) return;
+
+  document.getElementById("modalStudentName").textContent = `${student.name}'s Activity Log`;
+  const tbody = document.getElementById("modalActivityTableBody");
+  tbody.innerHTML = "";
+
+  if (!student.activities || student.activities.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 12px;">No activity records found.</td></tr>`;
+  } else {
+    student.activities.forEach(act => {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td style="padding: 8px; border-bottom: 1px solid #103454;">${act.date}</td><td style="padding: 8px; border-bottom: 1px solid #103454;">${act.activity}</td><td style="padding: 8px; border-bottom: 1px solid #103454;"><b>+${act.points}</b></td>`;
+      tbody.appendChild(row);
+    });
+  }
+
+  document.getElementById("activityModal").style.display = "flex";
+}
+
+document.getElementById("printSingleReportBtn").addEventListener("click", () => {
+  const student = classroomData[activeTeacher][activeClass].find(s => s.name === selectedStudentForReport);
+  if (!student) return;
+
+  const printArea = document.getElementById("printableReport");
+  let rowsHtml = student.activities.map(a => `
+    <tr><td>${a.date}</td><td>${a.activity}</td><td>+${a.points}</td></tr>
+  `).join("");
+
+  printArea.innerHTML = `
+    <div style="padding: 20px; font-family: Arial, sans-serif; color: #000;">
+      <h1>Student Activity & Points Report</h1>
+      <h3>Teacher: ${activeTeacher} | Class: ${activeClass} | Student: ${student.name} | Total Points: ${student.totalPoints}</h3>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <thead><tr style="background: #f0f0f0;"><th style="border: 1px solid #ccc; padding: 8px;">Date</th><th style="border: 1px solid #ccc; padding: 8px;">Activity Title</th><th style="border: 1px solid #ccc; padding: 8px;">Points Awarded</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+  `;
+
+  window.print();
+});
+
+document.getElementById("printClassReportBtn").addEventListener("click", () => {
+  const students = (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) ? classroomData[activeTeacher][activeClass] : [];
+  const printArea = document.getElementById("printableReport");
+
+  let rowsHtml = students.map(s => `
+    <tr><td>${s.name}</td><td>${s.totalPoints}</td><td>${s.activities ? s.activities.length : 0} activities</td></tr>
+  `).join("");
+
+  printArea.innerHTML = `
+    <div style="padding: 20px; font-family: Arial, sans-serif; color: #000;">
+      <h1>Classroom Summary Report</h1>
+      <h3>Teacher: ${activeTeacher} | Class: ${activeClass} | Date: ${new Date().toLocaleDateString()}</h3>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <thead><tr style="background: #f0f0f0;"><th style="border: 1px solid #ccc; padding: 8px;">Student Name</th><th style="border: 1px solid #ccc; padding: 8px;">Total Accumulated Points</th><th style="border: 1px solid #ccc; padding: 8px;">Total Activities Completed</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+  `;
+
+  window.print();
+});
+
+// Event Controls
+document.getElementById("createTeacherBtn").addEventListener("click", () => {
+  const input = document.getElementById("newTeacherInput");
+  const teacherName = input.value.trim();
+  if (!teacherName) return;
+
+  if (!classroomData[teacherName]) {
+    classroomData[teacherName] = {};
+  }
+  activeTeacher = teacherName;
+  input.value = "";
+  updateTeacherDropdown();
+});
+
 document.getElementById("createClassBtn").addEventListener("click", async () => {
   const input = document.getElementById("newClassInput");
   const className = input.value.trim();
-  if (!className) return;
+  if (!activeTeacher || !className) return;
 
   activeClass = className;
-  classroomData[className] = [];
+  if (!classroomData[activeTeacher]) classroomData[activeTeacher] = {};
+  classroomData[activeTeacher][className] = [];
   input.value = "";
-
   updateClassDropdown();
 
-  await fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({ action: "createClassroom", className: className })
-  });
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
+    await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "createClassroom", teacherName: activeTeacher, className: className })
+    });
+  }
 });
 
 document.getElementById("addStudentsBtn").addEventListener("click", async () => {
   const textarea = document.getElementById("bulkStudentInput");
   const names = textarea.value.split("\n").map(n => n.trim()).filter(n => n.length > 0);
-
-  if (!activeClass || names.length === 0) return;
+  if (!activeTeacher || !activeClass || names.length === 0) return;
 
   textarea.value = "";
 
-  await fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "addBulkStudents",
-      className: activeClass,
-      students: names
-    })
-  });
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
+    await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "addBulkStudents", teacherName: activeTeacher, className: activeClass, students: names })
+    });
+    fetchSheetData();
+  } else {
+    names.forEach(n => classroomData[activeTeacher][activeClass].push({ name: n, totalPoints: 0, activities: [] }));
+    loadClassroom(activeClass);
+  }
+});
 
-  fetchSheetData();
+document.getElementById("teacherDropdown").addEventListener("change", (e) => {
+  activeTeacher = e.target.value;
+  updateClassDropdown();
 });
 
 document.getElementById("classDropdown").addEventListener("change", (e) => {
@@ -638,36 +542,16 @@ document.getElementById("classDropdown").addEventListener("change", (e) => {
 
 document.getElementById("syncSheetBtn").addEventListener("click", fetchSheetData);
 
-// Main Engine Frame Loop
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  for (let i = foodPellets.length - 1; i >= 0; i--) {
-    foodPellets[i].update();
-    foodPellets[i].draw();
-    if (foodPellets[i].reached) foodPellets.splice(i, 1);
-  }
-
   for (let i = particles.length - 1; i >= 0; i--) {
     particles[i].update();
     particles[i].draw();
     if (particles[i].alpha <= 0) particles.splice(i, 1);
   }
-
-  turtles.forEach(turtle => {
-    turtle.update();
-    turtle.draw();
-  });
-
-  for (let i = floatingTexts.length - 1; i >= 0; i--) {
-    floatingTexts[i].update();
-    floatingTexts[i].draw();
-    if (floatingTexts[i].alpha <= 0) floatingTexts.splice(i, 1);
-  }
-
+  turtles.forEach(turtle => { turtle.update(); turtle.draw(); });
   requestAnimationFrame(animate);
 }
 
-// Start Engine
 fetchSheetData();
 animate();
