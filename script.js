@@ -7,7 +7,7 @@ function initIcons() {
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykX4o72pPfgO7h4EYY3mk0dwssrG_8plN_9uWA0shgMWTro-uLXWyt4bqDkMmICGxEhQ/exec";
 
 // Security Passcode Settings
-const DEFAULT_PASSCODE = "fromwombtothetomb";
+const DEFAULT_PASSCODE = "gcc-computer";
 
 let classroomData = {};
 let activeTeacher = "";
@@ -16,7 +16,7 @@ let turtles = [];
 let particles = [];
 let selectedStudentForReport = null;
 
-// Lock Screen & Mobile Navigation
+// Lock Screen & Initial setup
 document.addEventListener("DOMContentLoaded", () => {
   const overlay = document.getElementById("passwordLockOverlay");
   const input = document.getElementById("passcodeInput");
@@ -57,6 +57,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("closeModalBtn").addEventListener("click", () => {
     document.getElementById("activityModal").style.display = "none";
+  });
+
+  // Bulk Selection Helpers
+  document.getElementById("selectAllStudentsBtn").addEventListener("click", () => {
+    document.querySelectorAll(".student-checkbox").forEach(cb => cb.checked = true);
+  });
+
+  document.getElementById("deselectAllStudentsBtn").addEventListener("click", () => {
+    document.querySelectorAll(".student-checkbox").forEach(cb => cb.checked = false);
   });
 });
 
@@ -179,7 +188,6 @@ class Turtle {
       ctx.shadowColor = auraColor;
     }
 
-    // Flippers
     ctx.fillStyle = primaryColor;
     ctx.save();
     ctx.translate(-size * 0.55, -size * 0.25);
@@ -193,7 +201,6 @@ class Turtle {
     ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 
-    // Head
     ctx.fillStyle = primaryColor;
     ctx.beginPath(); ctx.arc(0, -size * 0.75, size * 0.3, 0, Math.PI * 2); ctx.fill();
 
@@ -203,14 +210,12 @@ class Turtle {
     ctx.arc(size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
     ctx.fill();
 
-    // Shell
     ctx.fillStyle = primaryColor;
     ctx.beginPath(); ctx.ellipse(0, 0, size * 0.65, size * 0.8, 0, 0, Math.PI * 2); ctx.fill();
     ctx.lineWidth = 2.5; ctx.strokeStyle = secondaryColor; ctx.stroke();
 
     ctx.restore();
 
-    // Text Label
     ctx.save();
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 13px 'Fredoka', sans-serif";
@@ -224,7 +229,7 @@ class Turtle {
   }
 }
 
-// Data Sync & Multi-Teacher Handling
+// Data Sync
 async function fetchSheetData() {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
     classroomData = {
@@ -243,7 +248,7 @@ async function fetchSheetData() {
     }
     updateTeacherDropdown();
   } catch (err) {
-    console.error("Sheet Sync Fetch Error:", err);
+    console.error("Fetch error:", err);
     if (Object.keys(classroomData).length === 0) {
       classroomData = { "Default Teacher": { "Class 1": [] } };
     }
@@ -300,23 +305,62 @@ function loadClassroom(className) {
   const students = (classroomData[activeTeacher] && classroomData[activeTeacher][className]) ? classroomData[activeTeacher][className] : [];
   turtles = students.map(s => new Turtle(s.name, s.totalPoints));
 
-  populateStudentDropdown(students);
+  populateStudentCheckboxes(students);
+  populateActivityHistory(students);
   renderLeaderboard(students);
   renderStudentRoster(students);
 }
 
-function populateStudentDropdown(students) {
-  const dropdown = document.getElementById("studentSelectDropdown");
-  dropdown.innerHTML = `<option value="">Select student...</option>`;
+// Multi-Select Student Checkboxes for Bulk Awarding
+function populateStudentCheckboxes(students) {
+  const container = document.getElementById("studentCheckboxContainer");
+  container.innerHTML = "";
+
+  if (students.length === 0) {
+    container.innerHTML = `<div class="empty-msg">No students loaded</div>`;
+    return;
+  }
+
   students.forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s.name;
-    opt.textContent = s.name;
-    dropdown.appendChild(opt);
+    const label = document.createElement("label");
+    label.style.display = "flex";
+    label.style.alignItems = "center";
+    label.style.gap = "6px";
+    label.style.fontSize = "12px";
+    label.style.cursor = "pointer";
+
+    label.innerHTML = `
+      <input type="checkbox" class="student-checkbox" value="${s.name}" style="width: auto;" />
+      <span>${s.name} (${s.totalPoints} pts)</span>
+    `;
+    container.appendChild(label);
   });
 }
 
-// Dense Ranking Leaderboard
+// Activity History Dropdown list
+function populateActivityHistory(students) {
+  const datalist = document.getElementById("activityHistoryList");
+  datalist.innerHTML = "";
+
+  const uniqueActivities = new Set();
+  students.forEach(s => {
+    if (s.activities) {
+      s.activities.forEach(a => {
+        if (a.activity && a.activity !== "Initial Registration" && a.activity !== "Enrolled") {
+          uniqueActivities.add(a.activity);
+        }
+      });
+    }
+  });
+
+  uniqueActivities.forEach(act => {
+    const opt = document.createElement("option");
+    opt.value = act;
+    datalist.appendChild(opt);
+  });
+}
+
+// Leaderboard with ties
 function renderLeaderboard(students) {
   const list = document.getElementById("leaderboardList");
   list.innerHTML = "";
@@ -366,44 +410,54 @@ function renderStudentRoster(students) {
   });
 }
 
-// Award Activity Points
+// Award Activity Points (Supports Bulk Students)
 document.getElementById("submitActivityBtn").addEventListener("click", async () => {
-  const studentName = document.getElementById("studentSelectDropdown").value;
+  const checkedBoxes = document.querySelectorAll(".student-checkbox:checked");
+  const selectedStudents = Array.from(checkedBoxes).map(cb => cb.value);
   const activityTitle = document.getElementById("activityTitleInput").value.trim() || "Activity Points";
   const points = parseInt(document.getElementById("activityPointsInput").value, 10);
 
-  if (!activeTeacher || !activeClass || !studentName || isNaN(points)) {
-    alert("Please select a teacher, class, student, and enter valid points!");
+  if (!activeTeacher || !activeClass || selectedStudents.length === 0 || isNaN(points)) {
+    alert("Please select a teacher, class, at least one student, and enter valid points!");
     return;
   }
 
-  const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
-  if (student) {
-    student.totalPoints += points;
-    student.activities.push({
-      activity: activityTitle,
-      points: points,
-      date: new Date().toLocaleDateString()
-    });
-  }
+  const currentDate = new Date().toLocaleDateString();
 
-  const turtle = turtles.find(t => t.name === studentName);
-  if (turtle) turtle.points += points;
+  // Local update
+  selectedStudents.forEach(studentName => {
+    const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
+    if (student) {
+      student.totalPoints += points;
+      student.activities.push({
+        activity: activityTitle,
+        points: points,
+        date: currentDate
+      });
+    }
 
-  renderLeaderboard(classroomData[activeTeacher][activeClass]);
-  renderStudentRoster(classroomData[activeTeacher][activeClass]);
+    const turtle = turtles.find(t => t.name === studentName);
+    if (turtle) turtle.points += points;
+  });
+
+  const students = classroomData[activeTeacher][activeClass];
+  populateStudentCheckboxes(students);
+  populateActivityHistory(students);
+  renderLeaderboard(students);
+  renderStudentRoster(students);
 
   document.getElementById("activityTitleInput").value = "";
   document.getElementById("activityPointsInput").value = "";
 
+  // Cloud sync
   if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
     await fetch(APPS_SCRIPT_URL, {
       method: "POST",
       body: JSON.stringify({
-        action: "addActivityPoints",
+        action: "addBulkActivityPoints",
         teacherName: activeTeacher,
         className: activeClass,
-        studentName: studentName,
+        studentsList: selectedStudents,
         activityName: activityTitle,
         points: points
       })
