@@ -372,3 +372,347 @@ canvas {
     height: calc(100vh - 57px);
   }
 }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Fredoka', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: #020d18;
+  color: #fff;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Security Lock Overlay */
+#passwordLockOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(2, 13, 24, 0.96);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+.lock-card {
+  background: #081a2b;
+  padding: 32px 24px;
+  border-radius: 16px;
+  border: 2px solid #103454;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  max-width: 380px;
+  width: 100%;
+}
+
+.lock-card h2 {
+  color: #4dd0e1;
+  margin-bottom: 8px;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.lock-card p {
+  color: #a0aec0;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.lock-card input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #1a4875;
+  background: #061524;
+  color: #fff;
+  font-size: 16px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+#lockErrorMessage {
+  color: #ff5252;
+  font-size: 13px;
+  margin-top: 12px;
+  display: none;
+}
+
+/* Main Layout */
+.aquarium-app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+}
+
+.mobile-navbar {
+  display: none;
+}
+
+/* Sidebar Dashboard */
+.sidebar {
+  width: 360px;
+  min-width: 310px;
+  background: #081a2b;
+  border-right: 2px solid #103454;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  z-index: 20;
+  transition: transform 0.3s ease;
+}
+
+.brand {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand h2 {
+  color: #4dd0e1;
+  font-size: 20px;
+}
+
+.control-box {
+  background: #0d253f;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #18426e;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-box h3 {
+  font-size: 12px;
+  color: #80deea;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Leaderboard Styling */
+.leaderboard-box {
+  border: 1px solid #ffb300;
+  background: #11283e;
+}
+
+.leaderboard-box h3 {
+  color: #ffd54f;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.rank-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #081a2b;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  border: 1px solid #1a3f66;
+}
+
+.rank-item.top-1 { border-color: #ffd700; background: rgba(255, 215, 0, 0.15); }
+.rank-item.top-2 { border-color: #c0c0c0; background: rgba(192, 192, 192, 0.15); }
+.rank-item.top-3 { border-color: #cd7f32; background: rgba(205, 127, 50, 0.15); }
+
+.rank-badge {
+  font-weight: bold;
+  margin-right: 6px;
+}
+
+.top-1 .rank-badge { color: #ffd700; }
+.top-2 .rank-badge { color: #c0c0c0; }
+.top-3 .rank-badge { color: #cd7f32; }
+
+.empty-msg {
+  font-size: 12px;
+  color: #78909c;
+  font-style: italic;
+  text-align: center;
+  padding: 8px;
+}
+
+.input-group {
+  display: flex;
+  gap: 8px;
+}
+
+input, select, textarea {
+  width: 100%;
+  background: #061524;
+  border: 1px solid #1a4875;
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+textarea {
+  height: 60px;
+  resize: vertical;
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.btn:active { transform: scale(0.96); }
+.btn.primary { background: #0288d1; color: white; }
+.btn.success { background: #00897b; color: white; }
+.btn.sync { background: #8e24aa; color: white; }
+.btn.danger { background: #d32f2f; color: white; font-size: 12px; }
+
+/* Student Directory */
+.student-feed-panel { flex: 1; }
+
+.custom-feed-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.custom-feed-bar input {
+  padding: 6px 10px;
+}
+
+.custom-feed-bar button {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.student-list {
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.student-card {
+  background: #081a2b;
+  padding: 8px 10px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #133a61;
+}
+
+.feed-btn-group {
+  display: flex;
+  gap: 4px;
+}
+
+.feed-btn {
+  background: #26a69a;
+  color: white;
+  border: none;
+  padding: 5px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Canvas Area */
+.aquarium-container {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.aquarium-overlay {
+  position: absolute;
+  top: 15px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.aquarium-overlay h1 {
+  font-size: 20px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.aquarium-overlay button {
+  pointer-events: auto;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: linear-gradient(180deg, #00838f 0%, #006064 40%, #002244 100%);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 850px) {
+  .aquarium-app {
+    flex-direction: column;
+  }
+
+  .mobile-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #081a2b;
+    padding: 10px 16px;
+    border-bottom: 1px solid #103454;
+    z-index: 30;
+  }
+
+  .sidebar {
+    position: absolute;
+    top: 57px;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 57px);
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .aquarium-container {
+    height: calc(100vh - 57px);
+  }
+}
+
