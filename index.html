@@ -78,21 +78,13 @@
       <!-- 4. Feeding Directory -->
       <div class="control-box student-feed-panel">
         <h3>4. Feed Turtles</h3>
+        <div class="custom-feed-bar">
+          <input type="number" id="customPointsInput" placeholder="Custom Pts (e.g. 17)" />
+          <button id="applyCustomFeedBtn" class="btn primary">Feed Custom</button>
+        </div>
         <div id="studentList" class="student-list"></div>
       </div>
     </aside>
 
     <!-- Aquarium Viewport -->
-    <main class="aquarium-container">
-      <div class="aquarium-overlay">
-        <h1 id="activeClassTitle">No Classroom Selected</h1>
-        <button id="syncSheetBtn" class="btn sync"><i data-lucide="refresh-cw"></i> Sync Sheets</button>
-      </div>
-      <canvas id="aquariumCanvas"></canvas>
-    </main>
-  </div>
-
-  <!-- Main Script File -->
-  <script src="script.js"></script>
-</body>
-</html>
+<!-- ... existing code -->
