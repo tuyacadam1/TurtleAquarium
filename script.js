@@ -502,17 +502,24 @@ function renderLeaderboard(students) {
     return;
   }
 
+  // Sort students descending by points
   const sorted = [...students].sort((a, b) => b.points - a.points);
 
+  // Dense ranking algorithm for equal point ties
+  let currentRank = 1;
   sorted.forEach((student, index) => {
+    if (index > 0 && student.points < sorted[index - 1].points) {
+      currentRank = index + 1;
+    }
+
     const item = document.createElement("div");
-    const rankClass = index < 3 ? `top-${index + 1}` : "";
+    const rankClass = currentRank <= 3 ? `top-${currentRank}` : "";
     item.className = `rank-item ${rankClass}`;
 
-    let medal = `#${index + 1}`;
-    if (index === 0) medal = "🥇";
-    if (index === 1) medal = "🥈";
-    if (index === 2) medal = "🥉";
+    let medal = `#${currentRank}`;
+    if (currentRank === 1) medal = "🥇";
+    if (currentRank === 2) medal = "🥈";
+    if (currentRank === 3) medal = "🥉";
 
     item.innerHTML = `
       <span><span class="rank-badge">${medal}</span> <b>${student.name}</b></span>
@@ -546,7 +553,7 @@ async function feedStudent(studentName, points) {
   if (turtle) {
     turtle.points += points;
     
-    floatingTexts.push(new FloatingText(turtle.x, turtle.y - turtle.getSize(), `+${points} Pts!`));
+    floatingTexts.push(new FloatingText(turtle.x, turtle.y - turtle.getSize(), `${points >= 0 ? '+' : ''}${points} Pts!`));
     foodPellets.push(new FoodPellet(turtle.x, turtle.y));
   }
 
@@ -566,6 +573,26 @@ async function feedStudent(studentName, points) {
     })
   });
 }
+
+// Custom Feeding Event Handler
+document.getElementById("applyCustomFeedBtn").addEventListener("click", () => {
+  const customVal = parseInt(document.getElementById("customPointsInput").value, 10);
+  if (isNaN(customVal) || customVal === 0) {
+    alert("Please enter a valid numeric points value (e.g. 17 or 18).");
+    return;
+  }
+
+  const studentName = prompt("Enter student name to feed custom points:");
+  if (!studentName) return;
+
+  const student = (classroomData[activeClass] || []).find(s => s.name.toLowerCase() === studentName.trim().toLowerCase());
+  if (student) {
+    feedStudent(student.name, customVal);
+    document.getElementById("customPointsInput").value = "";
+  } else {
+    alert("Student not found in active classroom!");
+  }
+});
 
 // User Dashboard Forms
 document.getElementById("createClassBtn").addEventListener("click", async () => {
