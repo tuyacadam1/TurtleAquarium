@@ -715,4 +715,24 @@ canvas {
     height: calc(100vh - 57px);
   }
 }
+/* Print-only container styling */
+.print-only {
+  display: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-only, .print-only * {
+    visibility: visible;
+    display: block !important;
+  }
+  .print-only {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
 
