@@ -721,18 +721,26 @@ canvas {
 }
 
 @media print {
+  /* Hide the web app UI entirely during printing */
   body * {
-    visibility: hidden;
+    display: none !important;
   }
-  .print-only, .print-only * {
-    visibility: visible;
+
+  /* Show only the printable container and preserve table display rules */
+  #printableReport,
+  #printableReport * {
+    display: revert !important;
+  }
+
+  #printableReport {
     display: block !important;
-  }
-  .print-only {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
+    color: #000;
+    background: #fff;
+    padding: 20px;
   }
 }
 
