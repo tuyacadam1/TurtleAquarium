@@ -3,183 +3,1511 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Classroom Turtle Aquarium</title>
+  <title>Classroom Turtle Aquarium & Leaderboard</title>
 
   <!-- Google Fonts & Lucide Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 
-  <link rel="stylesheet" href="style.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'bg-dark': '#020d18',
+            'panel-bg': '#081a2b',
+            'card-bg': '#0d253f',
+            'input-bg': '#061524',
+            'border-dark': '#103454',
+            'border-active': '#18426e',
+            'accent-cyan': '#4dd0e1',
+            'accent-blue': '#0288d1',
+            'accent-teal': '#00897b',
+            'accent-purple': '#8e24aa',
+            'accent-gold': '#ffd54f',
+            'accent-danger': '#d32f2f',
+          },
+          fontFamily: {
+            fredoka: ['Fredoka', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      user-select: none;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #020d18;
+      color: #ffffff;
+      font-family: 'Fredoka', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #061524;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #103454;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #18426e;
+    }
+
+    /* Lucide icon alignment */
+    svg.lucide {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    /* App Views */
+    .view-screen {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      inset: 0;
+    }
+
+    .view-screen.active {
+      display: flex;
+    }
+
+    /* Leaderboard Badge Styling */
+    .rank-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #081a2b;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      border: 1px solid #103454;
+    }
+
+    .rank-item.top-1 { border-color: #ffd700; background: rgba(255, 215, 0, 0.12); }
+    .rank-item.top-2 { border-color: #c0c0c0; background: rgba(192, 192, 192, 0.12); }
+    .rank-item.top-3 { border-color: #cd7f32; background: rgba(205, 127, 50, 0.12); }
+
+    .rank-badge {
+      font-weight: bold;
+      margin-right: 6px;
+    }
+
+    .top-1 .rank-badge { color: #ffd700; }
+    .top-2 .rank-badge { color: #c0c0c0; }
+    .top-3 .rank-badge { color: #cd7f32; }
+
+    /* Student Cards */
+    .student-card {
+      background: #081a2b;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #103454;
+    }
+
+    /* Canvas styling */
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 20%, #00acc1 0%, #006064 45%, #001f3f 90%);
+    }
+
+    /* Printable PDF Handler */
+    @media print {
+      body * {
+        display: none !important;
+      }
+      #printableReport, #printableReport * {
+        display: revert !important;
+      }
+      #printableReport {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        color: #000;
+        background: #fff;
+        padding: 20px;
+      }
+    }
+  </style>
 </head>
-<body>
+<body class="bg-bg-dark text-white font-fredoka overflow-hidden h-screen w-screen relative">
 
-  <!-- Security Passcode Overlay -->
-  <div id="passwordLockOverlay">
-    <div class="lock-card">
-      <h2><i data-lucide="shield-lock"></i> Classroom Aquarium</h2>
-      <p>Enter passcode to access admin controls:</p>
-      <input type="password" id="passcodeInput" placeholder="Enter passcode..." />
-      <button id="unlockBtn" class="btn primary">
-        <i data-lucide="key-round"></i> Unlock Aquarium
+  <!-- Printable Container for PDF Exports -->
+  <div id="printableReport" class="hidden"></div>
+
+  <!-- 1. LANDING PORTAL: ROLE SELECTOR -->
+  <section id="roleSelectScreen" class="view-screen active flex-col items-center justify-center p-6 bg-gradient-to-b from-bg-dark via-panel-bg to-bg-dark relative z-50">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent pointer-events-none"></div>
+    
+    <div class="text-center max-w-xl mx-auto z-10">
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-card-bg border-2 border-accent-cyan/40 rounded-full mb-4 shadow-lg shadow-cyan-500/10">
+        <span class="text-4xl">🐢</span>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-bold text-accent-cyan tracking-wide mb-2">Classroom Turtle Aquarium</h1>
+      <p class="text-gray-400 text-sm sm:text-base mb-8">Gamified learning dashboard & interactive turtle evolution tracker</p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
+        <!-- Student Card Button -->
+        <button id="selectStudentRoleBtn" class="group relative bg-card-bg hover:bg-border-dark border-2 border-border-active hover:border-accent-cyan p-6 rounded-2xl transition-all duration-300 text-left flex flex-col justify-between shadow-xl hover:-translate-y-1">
+          <div class="flex items-center justify-between mb-4">
+            <span class="w-12 h-12 rounded-xl bg-accent-teal/20 text-accent-cyan flex items-center justify-center">
+              <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+            </span>
+            <span class="text-xs bg-accent-teal/20 text-accent-cyan px-2.5 py-1 rounded-full font-semibold">Public View</span>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-white mb-1 group-hover:text-accent-cyan transition-colors">Student View</h3>
+            <p class="text-xs text-gray-400">Select your class section to watch turtles swim, view leaderboard & activity logs.</p>
+          </div>
+        </button>
+
+        <!-- Teacher Card Button -->
+        <button id="selectTeacherRoleBtn" class="group relative bg-card-bg hover:bg-border-dark border-2 border-border-active hover:border-accent-blue p-6 rounded-2xl transition-all duration-300 text-left flex flex-col justify-between shadow-xl hover:-translate-y-1">
+          <div class="flex items-center justify-between mb-4">
+            <span class="w-12 h-12 rounded-xl bg-accent-blue/20 text-accent-cyan flex items-center justify-center">
+              <i data-lucide="shield-check" class="w-6 h-6"></i>
+            </span>
+            <span class="text-xs bg-accent-blue/20 text-accent-cyan px-2.5 py-1 rounded-full font-semibold">Admin Passcode</span>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-white mb-1 group-hover:text-accent-cyan transition-colors">Teacher / Admin</h3>
+            <p class="text-xs text-gray-400">Manage classrooms, award activity points, import students, and trigger evolution abilities.</p>
+          </div>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. TEACHER PASSCODE OVERLAY -->
+  <div id="passwordLockOverlay" class="hidden fixed inset-0 bg-bg-dark/95 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+    <div class="bg-panel-bg border-2 border-border-dark rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl relative">
+      <button id="cancelPasscodeBtn" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
       </button>
-      <p id="lockErrorMessage">Incorrect passcode. Try again!</p>
+      
+      <div class="w-12 h-12 bg-card-bg border border-border-active rounded-full flex items-center justify-center mx-auto mb-3 text-accent-cyan">
+        <i data-lucide="lock" class="w-6 h-6"></i>
+      </div>
+      <h2 class="text-xl font-bold text-accent-cyan mb-1">Admin Passcode</h2>
+      <p class="text-xs text-gray-400 mb-5">Enter passcode to unlock admin controls:</p>
+      
+      <input type="password" id="passcodeInput" placeholder="Enter passcode..." class="w-full bg-input-bg border border-border-active rounded-lg px-4 py-3 text-center text-white text-base outline-none focus:border-accent-cyan mb-3">
+      
+      <button id="unlockBtn" class="w-full bg-accent-blue hover:bg-blue-600 text-white font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 transition-all">
+        <i data-lucide="key-round" class="w-4 h-4"></i> Unlock Controls
+      </button>
+
+      <p id="lockErrorMessage" class="text-accent-danger text-xs mt-3 hidden">Incorrect passcode! Try default: <span class="font-mono underline">gcc-computer</span></p>
     </div>
   </div>
 
-  <!-- Print Container for PDF Generation -->
-  <div id="printableReport" class="print-only"></div>
-
-  <!-- Main Web Application -->
-  <div class="aquarium-app">
-    
-    <!-- Mobile Navigation Bar -->
-    <header class="mobile-navbar">
-      <h2>🐢 Aquarium</h2>
-      <button id="toggleSidebarBtn" class="btn primary">
-        <i data-lucide="menu"></i> Controls
-      </button>
+  <!-- 3. TEACHER ADMIN APP VIEW -->
+  <section id="teacherAppScreen" class="view-screen flex-col lg:flex-row relative">
+    <!-- Mobile Header Bar -->
+    <header class="lg:hidden bg-panel-bg border-b border-border-dark px-4 py-3 flex items-center justify-between z-30">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">🐢</span>
+        <span class="font-bold text-accent-cyan text-sm">Teacher Admin</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="teacherMobileToggleSidebar" class="bg-card-bg border border-border-active px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1">
+          <i data-lucide="menu" class="w-4 h-4"></i> Menu
+        </button>
+        <button id="teacherRoleSwitchBtn" class="bg-accent-danger hover:bg-red-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1">
+          <i data-lucide="log-out" class="w-4 h-4"></i> Exit
+        </button>
+      </div>
     </header>
 
-    <!-- Sidebar Dashboard -->
-    <aside class="sidebar" id="appSidebar">
-      <div class="brand">
-        <h2>🐢 Turtle Aquarium</h2>
-        <button id="relockBtn" class="btn danger" title="Lock Controls">
-          <i data-lucide="lock"></i> Lock
+    <!-- Sidebar Management Dashboard -->
+    <aside id="teacherSidebar" class="w-full lg:w-[380px] lg:min-w-[340px] bg-panel-bg border-r-2 border-border-dark p-4 flex flex-col gap-3.5 overflow-y-auto z-20 transition-transform duration-300 max-lg:absolute max-lg:top-[53px] max-lg:bottom-0 max-lg:-translate-x-full max-lg:[&.open]:translate-x-0">
+      <div class="flex items-center justify-between pb-2 border-b border-border-dark">
+        <h2 class="text-lg font-bold text-accent-cyan flex items-center gap-2">
+          <span>🐢 Admin Dashboard</span>
+        </h2>
+        <button id="relockBtn" class="bg-accent-danger hover:bg-red-700 text-white text-xs px-2.5 py-1.5 rounded-md font-semibold flex items-center gap-1" title="Lock & Return Home">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i> Lock
         </button>
       </div>
 
       <!-- 1. Teacher Profile Selection -->
-      <div class="control-box">
-        <h3><i data-lucide="user-check"></i> 1. Select / Add Teacher</h3>
-        <div class="input-group">
-          <select id="teacherDropdown"><option value="">Loading teachers...</option></select>
-        </div>
-        <div class="input-group">
-          <input type="text" id="newTeacherInput" placeholder="New Teacher Name..." />
-          <button id="createTeacherBtn" class="btn primary">
-            <i data-lucide="user-plus"></i> Add
+      <div class="bg-card-bg p-3 rounded-xl border border-border-active flex flex-col gap-2">
+        <h3 class="text-xs font-bold text-accent-cyan uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="user-check" class="w-3.5 h-3.5"></i> 1. Select / Add Teacher
+        </h3>
+        <select id="teacherDropdown" class="w-full bg-input-bg border border-border-dark rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-accent-cyan">
+          <option value="">Loading teachers...</option>
+        </select>
+        <div class="flex gap-2">
+          <input type="text" id="newTeacherInput" placeholder="New Teacher Name..." class="w-full bg-input-bg border border-border-dark rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-accent-cyan">
+          <button id="createTeacherBtn" class="bg-accent-blue hover:bg-blue-600 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap flex items-center gap-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add
           </button>
         </div>
       </div>
 
       <!-- 2. Active Classroom Selection -->
-      <div class="control-box">
-        <h3><i data-lucide="school"></i> 2. Active Classroom</h3>
-        <div class="input-group">
-          <select id="classDropdown"><option value="">Select a teacher first...</option></select>
-        </div>
-        <div class="input-group">
-          <input type="text" id="newClassInput" placeholder="New Class Name..." />
-          <button id="createClassBtn" class="btn primary">
-            <i data-lucide="plus"></i> Create
+      <div class="bg-card-bg p-3 rounded-xl border border-border-active flex flex-col gap-2">
+        <h3 class="text-xs font-bold text-accent-cyan uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="school" class="w-3.5 h-3.5"></i> 2. Active Class Section
+        </h3>
+        <select id="classDropdown" class="w-full bg-input-bg border border-border-dark rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-accent-cyan">
+          <option value="">Select a teacher first...</option>
+        </select>
+        <div class="flex gap-2">
+          <input type="text" id="newClassInput" placeholder="New Class Name..." class="w-full bg-input-bg border border-border-dark rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-accent-cyan">
+          <button id="createClassBtn" class="bg-accent-blue hover:bg-blue-600 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap flex items-center gap-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Create
           </button>
         </div>
       </div>
 
       <!-- 3. Class Leaderboard -->
-      <div class="control-box leaderboard-box">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3><i data-lucide="trophy"></i> Class Leaderboard</h3>
-          <button id="printClassReportBtn" class="btn sync" style="padding: 4px 8px; font-size: 11px;">
-            <i data-lucide="file-text"></i> Class PDF
+      <div class="bg-[#0f2b45] p-3 rounded-xl border border-accent-gold/60 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold text-accent-gold uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="trophy" class="w-3.5 h-3.5"></i> Class Leaderboard
+          </h3>
+          <button id="printClassReportBtn" class="bg-accent-purple hover:bg-purple-700 text-[10px] px-2 py-1 rounded font-bold flex items-center gap-1">
+            <i data-lucide="file-text" class="w-3 h-3"></i> Class PDF
           </button>
         </div>
-        <div id="leaderboardList" class="leaderboard-list">
-          <div class="empty-msg">No students ranked yet</div>
+        <div id="leaderboardList" class="flex flex-col gap-1.5 max-h-36 overflow-y-auto">
+          <div class="text-xs text-gray-400 italic text-center py-2">No students ranked yet</div>
         </div>
       </div>
 
       <!-- 4. Award Activity Points -->
-      <div class="control-box">
-        <h3><i data-lucide="zap"></i> Award Activity Points</h3>
+      <div class="bg-card-bg p-3 rounded-xl border border-border-active flex flex-col gap-2">
+        <h3 class="text-xs font-bold text-accent-cyan uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="zap" class="w-3.5 h-3.5"></i> Award Activity Points
+        </h3>
         
-        <label style="font-size: 11px; color: #80deea;">Activity Name:</label>
-        <div class="input-group">
-          <input type="text" id="activityTitleInput" list="activityHistoryList" placeholder="Select or type activity..." />
-          <datalist id="activityHistoryList"></datalist>
-        </div>
+        <input type="text" id="activityTitleInput" list="activityHistoryList" placeholder="Activity Title (e.g., Science Quiz)..." class="w-full bg-input-bg border border-border-dark rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-accent-cyan">
+        <datalist id="activityHistoryList"></datalist>
 
-        <label style="font-size: 11px; color: #80deea; margin-top: 4px;">Points to Award:</label>
-        <input type="number" id="activityPointsInput" placeholder="Points (e.g. 50)" />
+        <input type="number" id="activityPointsInput" placeholder="Points to award (e.g. 50)" class="w-full bg-input-bg border border-border-dark rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-accent-cyan">
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
-          <label style="font-size: 11px; color: #80deea;">Select Students:</label>
-          <div>
-            <button id="selectAllStudentsBtn" class="btn small" style="background:#1a4875; padding: 2px 6px; font-size: 10px;">Select All</button>
-            <button id="deselectAllStudentsBtn" class="btn small" style="background:#1a4875; padding: 2px 6px; font-size: 10px;">Clear</button>
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-[11px] text-accent-cyan">Select Students:</span>
+          <div class="flex gap-1">
+            <button id="selectAllStudentsBtn" class="bg-border-dark hover:bg-border-active px-2 py-0.5 rounded text-[10px] font-semibold">Select All</button>
+            <button id="deselectAllStudentsBtn" class="bg-border-dark hover:bg-border-active px-2 py-0.5 rounded text-[10px] font-semibold">Clear</button>
           </div>
         </div>
 
-        <div id="studentCheckboxContainer" style="max-height: 120px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
-          <div class="empty-msg">No students loaded</div>
+        <div id="studentCheckboxContainer" class="max-h-28 overflow-y-auto bg-input-bg border border-border-dark rounded-lg p-2 flex flex-col gap-1.5">
+          <div class="text-xs text-gray-400 italic text-center py-2">No students loaded</div>
         </div>
 
-        <button id="submitActivityBtn" class="btn success" style="margin-top: 6px;">
-          <i data-lucide="award"></i> Award Points
+        <button id="submitActivityBtn" class="w-full bg-accent-teal hover:bg-teal-700 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all mt-1">
+          <i data-lucide="award" class="w-4 h-4"></i> Award Points (Trigger Abilities)
         </button>
       </div>
 
       <!-- 5. Add Students in Bulk -->
-      <div class="control-box">
-        <h3><i data-lucide="users"></i> 5. Add Students in Bulk</h3>
-        <textarea id="bulkStudentInput" placeholder="Enter student names (one per line)..."></textarea>
-        <button id="addStudentsBtn" class="btn success">
-          <i data-lucide="user-check"></i> Add Students
+      <div class="bg-card-bg p-3 rounded-xl border border-border-active flex flex-col gap-2">
+        <h3 class="text-xs font-bold text-accent-cyan uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i> Bulk Import Students
+        </h3>
+        <textarea id="bulkStudentInput" placeholder="Enter student names (one per line)..." class="w-full bg-input-bg border border-border-dark rounded-lg p-2 text-xs text-white outline-none focus:border-accent-cyan h-14 resize-y"></textarea>
+        <button id="addStudentsBtn" class="bg-accent-teal hover:bg-teal-700 font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1">
+          <i data-lucide="user-check" class="w-3.5 h-3.5"></i> Import Roster
         </button>
       </div>
 
-      <!-- 6. Student Roster -->
-      <div class="control-box student-feed-panel">
-        <h3><i data-lucide="list"></i> 6. Student Roster</h3>
-        <div id="studentList" class="student-list"></div>
+      <!-- 6. Student Directory -->
+      <div class="bg-card-bg p-3 rounded-xl border border-border-active flex flex-col gap-2 flex-1">
+        <h3 class="text-xs font-bold text-accent-cyan uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="list" class="w-3.5 h-3.5"></i> Student Directory
+        </h3>
+        <div id="studentList" class="flex flex-col gap-1.5 max-h-48 overflow-y-auto"></div>
       </div>
     </aside>
 
-    <!-- Aquarium Canvas Viewport -->
-    <main class="aquarium-container">
-      <div class="aquarium-overlay">
+    <!-- Main Aquarium Container -->
+    <main class="flex-1 relative h-full w-full overflow-hidden">
+      <div class="absolute top-4 left-5 right-5 flex items-center justify-between pointer-events-none z-10">
         <div>
-          <h1 id="activeClassTitle">No Classroom Selected</h1>
-          <p id="activeTeacherSubtitle" style="font-size: 12px; color: #80deea; margin-top: 2px;">Teacher: None</p>
+          <h1 id="activeClassTitle" class="text-xl sm:text-2xl font-bold drop-shadow-md">No Class Selected</h1>
+          <p id="activeTeacherSubtitle" class="text-xs text-accent-cyan mt-0.5">Teacher: None</p>
         </div>
-        <button id="syncSheetBtn" class="btn sync">
-          <i data-lucide="refresh-cw"></i> Sync
+        <button id="syncSheetBtn" class="pointer-events-auto bg-accent-purple hover:bg-purple-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-lg">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Sync
         </button>
       </div>
       <canvas id="aquariumCanvas"></canvas>
     </main>
-  </div>
+  </section>
 
-  <!-- Activity History Modal -->
-  <div id="activityModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 999; padding: 16px;">
-    <div style="background: var(--panel-bg); border: 2px solid var(--border-color); border-radius: 12px; width: 100%; max-width: 520px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 id="modalStudentName" style="color: var(--accent-cyan); font-size: 18px;">Student Activity Log</h2>
-        <button id="closeModalBtn" style="background: none; border: none; color: white; font-size: 22px; cursor: pointer;">&times;</button>
+  <!-- 4. STUDENT PUBLIC VIEWER APP VIEW -->
+  <section id="studentAppScreen" class="view-screen flex-col relative">
+    <!-- Student Header Navbar -->
+    <header class="bg-panel-bg border-b-2 border-border-dark px-4 py-3 flex flex-wrap items-center justify-between gap-3 z-30 shadow-xl">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🐢</span>
+        <div>
+          <h2 class="text-lg font-bold text-accent-cyan leading-tight">Student Aquarium Viewer</h2>
+          <p class="text-[11px] text-gray-400">Watch your turtle swim, level up, and unleash abilities!</p>
+        </div>
       </div>
-      <div style="max-height: 250px; overflow-y: auto;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
-          <thead>
-            <tr style="background: var(--input-bg); color: #80deea;">
-              <th style="padding: 8px; border-bottom: 1px solid var(--border-color);">Date</th>
-              <th style="padding: 8px; border-bottom: 1px solid var(--border-color);">Activity Title</th>
-              <th style="padding: 8px; border-bottom: 1px solid var(--border-color);">Points</th>
+
+      <!-- Interactive Dropdowns for Class Selection -->
+      <div class="flex items-center flex-wrap gap-2">
+        <div class="flex items-center gap-1.5 bg-card-bg border border-border-active px-3 py-1.5 rounded-lg">
+          <label class="text-xs text-accent-cyan font-semibold">Teacher:</label>
+          <select id="studentTeacherSelect" class="bg-input-bg border border-border-dark text-xs text-white rounded px-2 py-1 outline-none focus:border-accent-cyan">
+            <option value="">Select Teacher...</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-1.5 bg-card-bg border border-border-active px-3 py-1.5 rounded-lg">
+          <label class="text-xs text-accent-cyan font-semibold">Section:</label>
+          <select id="studentClassSelect" class="bg-input-bg border border-border-dark text-xs text-white rounded px-2 py-1 outline-none focus:border-accent-cyan">
+            <option value="">Select Section...</option>
+          </select>
+        </div>
+
+        <button id="toggleStudentOverlayBtn" class="bg-accent-blue hover:bg-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1">
+          <i data-lucide="trophy" class="w-3.5 h-3.5"></i> Roster & Ranks
+        </button>
+
+        <button id="studentExitBtn" class="bg-accent-danger hover:bg-red-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Home
+        </button>
+      </div>
+    </header>
+
+    <!-- Student Aquarium Viewer Body -->
+    <main class="flex-1 relative w-full h-full overflow-hidden">
+      <!-- Title Overlay -->
+      <div class="absolute top-4 left-5 pointer-events-none z-10">
+        <h1 id="studentActiveTitle" class="text-2xl font-bold text-white drop-shadow-lg">Select a Teacher & Section</h1>
+        <p id="studentActiveSubtitle" class="text-xs text-accent-cyan mt-1 drop-shadow">Evolves every 100 points • Stage 11+ unveils Elemental Titans!</p>
+      </div>
+
+      <canvas id="studentAquariumCanvas"></canvas>
+
+      <!-- Slide-over Leaderboard & Roster Drawer for Students -->
+      <div id="studentRosterDrawer" class="absolute top-4 right-4 bottom-4 w-80 bg-panel-bg/95 border-2 border-border-dark rounded-2xl p-4 flex flex-col gap-3 backdrop-blur-md shadow-2xl z-20 transition-all duration-300 translate-x-[120%] [&.open]:translate-x-0">
+        <div class="flex items-center justify-between pb-2 border-b border-border-dark">
+          <h3 class="text-sm font-bold text-accent-gold flex items-center gap-1.5">
+            <i data-lucide="trophy" class="w-4 h-4"></i> Section Ranks
+          </h3>
+          <button id="closeStudentDrawerBtn" class="text-gray-400 hover:text-white">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Search Student Name -->
+        <input type="text" id="studentSearchInput" placeholder="Search student name..." class="w-full bg-input-bg border border-border-dark rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-accent-cyan">
+
+        <!-- Roster Ranking Container -->
+        <div id="studentDrawerRosterList" class="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
+          <div class="text-xs text-gray-400 italic text-center py-4">No students loaded</div>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- 5. ACTIVITY LOG MODAL -->
+  <div id="activityModal" class="hidden fixed inset-0 bg-bg-dark/80 backdrop-blur-sm z-[9999] items-center justify-center p-4">
+    <div class="bg-panel-bg border-2 border-border-dark rounded-2xl p-6 max-w-lg w-full flex flex-col gap-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-border-dark pb-3">
+        <h2 id="modalStudentName" class="text-lg font-bold text-accent-cyan">Student Activity Log</h2>
+        <button id="closeModalBtn" class="text-gray-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="max-h-64 overflow-y-auto border border-border-dark rounded-lg bg-input-bg">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-panel-bg text-accent-cyan border-b border-border-dark sticky top-0">
+            <tr>
+              <th class="p-2.5">Date</th>
+              <th class="p-2.5">Activity Title</th>
+              <th class="p-2.5">Points</th>
             </tr>
           </thead>
           <tbody id="modalActivityTableBody"></tbody>
         </table>
       </div>
-      <div style="display: flex; justify-content: flex-end;">
-        <button id="printSingleReportBtn" class="btn primary">
-          <i data-lucide="printer"></i> Save PDF Report
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="printSingleReportBtn" class="bg-accent-blue hover:bg-blue-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5">
+          <i data-lucide="printer" class="w-4 h-4"></i> Save PDF Report
         </button>
       </div>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    // --- Application State ---
+    function initIcons() {
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
+    }
+
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykX4o72pPfgO7h4EYY3mk0dwssrG_8plN_9uWA0shgMWTro-uLXWyt4bqDkMmICGxEhQ/exec";
+    const DEFAULT_PASSCODE = "gcc-computer";
+
+    let classroomData = {};
+    let activeTeacher = "";
+    let activeClass = "";
+    let teacherTurtles = [];
+    let teacherParticles = [];
+
+    let studentSelectedTeacher = "";
+    let studentSelectedClass = "";
+    let studentTurtles = [];
+    let studentParticles = [];
+
+    let selectedStudentForReport = null;
+
+    // Navigation Screens
+    const roleSelectScreen = document.getElementById("roleSelectScreen");
+    const teacherAppScreen = document.getElementById("teacherAppScreen");
+    const studentAppScreen = document.getElementById("studentAppScreen");
+    const passwordLockOverlay = document.getElementById("passwordLockOverlay");
+
+    function showScreen(screen) {
+      document.querySelectorAll(".view-screen").forEach(s => s.classList.remove("active"));
+      screen.classList.add("active");
+      initIcons();
+      resizeCanvases();
+    }
+
+    // Role Switchers
+    document.getElementById("selectStudentRoleBtn").addEventListener("click", () => {
+      showScreen(studentAppScreen);
+      populateStudentTeacherDropdown();
+    });
+
+    document.getElementById("selectTeacherRoleBtn").addEventListener("click", () => {
+      passwordLockOverlay.classList.remove("hidden");
+      document.getElementById("passcodeInput").focus();
+    });
+
+    document.getElementById("cancelPasscodeBtn").addEventListener("click", () => {
+      passwordLockOverlay.classList.add("hidden");
+    });
+
+    document.getElementById("unlockBtn").addEventListener("click", attemptUnlock);
+    document.getElementById("passcodeInput").addEventListener("keyup", (e) => {
+      if (e.key === "Enter") attemptUnlock();
+    });
+
+    function attemptUnlock() {
+      const input = document.getElementById("passcodeInput");
+      const errorMsg = document.getElementById("lockErrorMessage");
+      if (input.value.trim() === DEFAULT_PASSCODE) {
+        passwordLockOverlay.classList.add("hidden");
+        errorMsg.classList.add("hidden");
+        input.value = "";
+        showScreen(teacherAppScreen);
+      } else {
+        errorMsg.classList.remove("hidden");
+        input.value = "";
+        input.focus();
+      }
+    }
+
+    document.getElementById("relockBtn").addEventListener("click", () => {
+      showScreen(roleSelectScreen);
+    });
+
+    document.getElementById("teacherRoleSwitchBtn").addEventListener("click", () => {
+      showScreen(roleSelectScreen);
+    });
+
+    document.getElementById("studentExitBtn").addEventListener("click", () => {
+      showScreen(roleSelectScreen);
+    });
+
+    // Mobile Sidebar Toggles
+    document.getElementById("teacherMobileToggleSidebar").addEventListener("click", () => {
+      document.getElementById("teacherSidebar").classList.toggle("open");
+    });
+
+    // Student Drawer Toggle
+    document.getElementById("toggleStudentOverlayBtn").addEventListener("click", () => {
+      document.getElementById("studentRosterDrawer").classList.toggle("open");
+    });
+    document.getElementById("closeStudentDrawerBtn").addEventListener("click", () => {
+      document.getElementById("studentRosterDrawer").classList.remove("open");
+    });
+
+    // Activity Log Modal Close
+    document.getElementById("closeModalBtn").addEventListener("click", () => {
+      document.getElementById("activityModal").classList.add("hidden");
+      document.getElementById("activityModal").classList.remove("flex");
+    });
+
+    // Checkbox Helper Buttons
+    document.getElementById("selectAllStudentsBtn")?.addEventListener("click", () => {
+      document.querySelectorAll(".student-checkbox").forEach(cb => cb.checked = true);
+    });
+
+    document.getElementById("deselectAllStudentsBtn")?.addEventListener("click", () => {
+      document.querySelectorAll(".student-checkbox").forEach(cb => cb.checked = false);
+    });
+
+    // --- Canvas & Particle Engines ---
+    const tCanvas = document.getElementById("aquariumCanvas");
+    const tCtx = tCanvas.getContext("2d");
+
+    const sCanvas = document.getElementById("studentAquariumCanvas");
+    const sCtx = sCanvas.getContext("2d");
+
+    function resizeCanvases() {
+      if (tCanvas && tCanvas.parentElement) {
+        tCanvas.width = tCanvas.parentElement.clientWidth;
+        tCanvas.height = tCanvas.parentElement.clientHeight;
+      }
+      if (sCanvas && sCanvas.parentElement) {
+        sCanvas.width = sCanvas.parentElement.clientWidth;
+        sCanvas.height = sCanvas.parentElement.clientHeight;
+      }
+    }
+    window.addEventListener("resize", resizeCanvases);
+    window.addEventListener("orientationchange", resizeCanvases);
+
+    class Particle {
+      constructor(x, y, color, vx = null, vy = null, size = null) {
+        this.x = x; this.y = y; this.color = color;
+        this.size = size || (Math.random() * 3 + 1);
+        this.alpha = 1;
+        this.vx = vx !== null ? vx : (Math.random() - 0.5) * 0.8;
+        this.vy = vy !== null ? vy : (Math.random() - 0.5) * 0.8;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= 0.015;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Evolutionary Turtle Engine
+    class Turtle {
+      constructor(name, points, canvasRef) {
+        this.name = name;
+        this.points = points;
+        this.canvas = canvasRef;
+        const padding = 80;
+        const w = this.canvas.width || 800;
+        const h = this.canvas.height || 600;
+        this.x = Math.random() * Math.max(100, w - padding * 2) + padding;
+        this.y = Math.random() * Math.max(100, h - padding * 2) + padding;
+        this.speed = 1.0 + Math.random() * 0.5;
+        this.angle = Math.random() * Math.PI * 2;
+        this.flipperSwimTimer = Math.random() * 100;
+        this.hueShift = Math.random() * 360;
+        this.abilityTimer = 0; // 600 frames = 10s
+
+        const elements = ['lightning', 'water', 'fire', 'shadow', 'celestial'];
+        this.element = elements[Math.floor(Math.random() * elements.length)];
+      }
+
+      triggerAbility() {
+        this.abilityTimer = 600; // 10 Seconds duration
+      }
+
+      getStage() {
+        return Math.max(1, Math.floor(this.points / 100) + 1);
+      }
+
+      getSize() {
+        const scaleFactor = this.canvas.width < 600 ? 0.75 : 1;
+        const baseSize = 24 + (this.getStage() - 1) * 6;
+        return Math.min(baseSize, 150) * scaleFactor;
+      }
+
+      getStageTitle() {
+        const stage = this.getStage();
+        if (stage === 1) return "Hatchling";
+        if (stage === 2) return "Armored Shell";
+        if (stage === 3) return "Mystic Cyber";
+        if (stage === 4) return "Cosmic Leviathan";
+        if (stage === 5) return "Ocean Guardian";
+        if (stage === 6) return "Abyssal Drake";
+        if (stage === 7) return "Titan Shell";
+        if (stage === 8) return "Prismatic Behemoth";
+        if (stage === 9) return "Elder Leviathan";
+        if (stage === 10) return "Ascended Warden";
+
+        const elementalTitles = {
+          lightning: "Storm-Forged Raiju",
+          water: "Tidal Abyss Sovereign",
+          fire: "Infernal Sun-Crusher",
+          shadow: "Void Stalker",
+          celestial: "Astral Galaxy Titan"
+        };
+        const elementTitle = elementalTitles[this.element] || "Elemental Overlord";
+        return `${elementTitle} (Tier ${stage - 10})`;
+      }
+
+      getElementColors() {
+        const stage = this.getStage();
+        if (stage < 11) {
+          const palette = [
+            { primary: "#2e7d32", secondary: "#81c784", aura: "rgba(76, 175, 80, 0.4)" },
+            { primary: "#00838f", secondary: "#4dd0e1", aura: "rgba(0, 188, 212, 0.5)" },
+            { primary: "#6a1b9a", secondary: "#ba68c8", aura: "rgba(156, 39, 176, 0.6)" },
+            { primary: "#f57f17", secondary: "#fff176", aura: "rgba(255, 215, 0, 0.7)" },
+            { primary: "#c62828", secondary: "#ff8a80", aura: "rgba(255, 82, 82, 0.8)" },
+            { primary: "#283593", secondary: "#7986cb", aura: "rgba(63, 81, 181, 0.8)" },
+            { primary: "#00695c", secondary: "#80cbc4", aura: "rgba(0, 150, 136, 0.8)" },
+            { primary: "#d81b60", secondary: "#ff80ab", aura: "rgba(233, 30, 99, 0.8)" },
+            { primary: "#ef6c00", secondary: "#ffb74d", aura: "rgba(255, 152, 0, 0.8)" },
+            { primary: "#4e342e", secondary: "#bcaaa4", aura: "rgba(121, 85, 72, 0.8)" }
+          ];
+          return palette[(stage - 1) % palette.length];
+        }
+
+        switch (this.element) {
+          case 'lightning':
+            return { primary: "#ffd600", secondary: "#ffffff", aura: "rgba(255, 235, 59, 0.95)", particle: "#ffff8d" };
+          case 'water':
+            return { primary: "#0288d1", secondary: "#80deea", aura: "rgba(3, 169, 244, 0.9)", particle: "#00e5ff" };
+          case 'fire':
+            return { primary: "#dd2c00", secondary: "#ffab00", aura: "rgba(255, 61, 0, 0.95)", particle: "#ff6d00" };
+          case 'shadow':
+            return { primary: "#311b92", secondary: "#ea80fc", aura: "rgba(103, 58, 183, 0.9)", particle: "#d500f9" };
+          case 'celestial':
+          default:
+            return { 
+              primary: `hsl(${this.hueShift}, 85%, 50%)`, 
+              secondary: `hsl(${(this.hueShift + 60) % 360}, 100%, 75%)`, 
+              aura: `hsla(${this.hueShift}, 100%, 65%, 0.9)`,
+              particle: "#ffffff"
+            };
+        }
+      }
+
+      update(particleArray) {
+        const currentSpeed = this.abilityTimer > 0 ? this.speed * 2.5 : this.speed;
+        this.angle += (Math.random() - 0.5) * 0.08;
+        this.x += Math.cos(this.angle) * currentSpeed;
+        this.y += Math.sin(this.angle) * currentSpeed;
+        this.flipperSwimTimer += this.abilityTimer > 0 ? 0.2 : 0.08;
+        this.hueShift = (this.hueShift + 1.5) % 360;
+
+        const margin = this.getSize() + 30;
+        if (this.x < margin) {
+          this.x = margin;
+          this.angle = Math.atan2(Math.sin(this.angle), Math.abs(Math.cos(this.angle)));
+        } else if (this.x > this.canvas.width - margin) {
+          this.x = this.canvas.width - margin;
+          this.angle = Math.atan2(Math.sin(this.angle), -Math.abs(Math.cos(this.angle)));
+        }
+
+        if (this.y < margin) {
+          this.y = margin;
+          this.angle = Math.atan2(Math.abs(Math.sin(this.angle)), Math.cos(this.angle));
+        } else if (this.y > this.canvas.height - margin) {
+          this.y = this.canvas.height - margin;
+          this.angle = Math.atan2(-Math.abs(Math.sin(this.angle)), Math.cos(this.angle));
+        }
+
+        const stage = this.getStage();
+        if (stage >= 3 && Math.random() < Math.min(0.8, 0.2 + stage * 0.05)) {
+          const colors = this.getElementColors();
+          particleArray.push(new Particle(this.x, this.y, colors.particle || colors.secondary));
+        }
+
+        if (this.abilityTimer > 0) {
+          this.abilityTimer--;
+          this.generateAbilityParticles(particleArray);
+        }
+      }
+
+      generateAbilityParticles(particleArray) {
+        const stage = this.getStage();
+        const size = this.getSize();
+
+        if (stage < 11) {
+          switch (stage) {
+            case 1: particleArray.push(new Particle(this.x, this.y, "#e0f7fa", (Math.random() - 0.5) * 1.5, -Math.random() * 2 - 0.5, Math.random() * 4 + 1.5)); break;
+            case 2: for (let i = 0; i < 2; i++) particleArray.push(new Particle(this.x, this.y, "#4dd0e1", (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, Math.random() * 4 + 1.5)); break;
+            case 3: for (let i = 0; i < 3; i++) particleArray.push(new Particle(this.x, this.y, Math.random() < 0.5 ? "#ba68c8" : "#80deea", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 4 + 2)); break;
+            case 4: for (let i = 0; i < 3; i++) particleArray.push(new Particle(this.x, this.y, "#fff176", (Math.random() - 0.5) * 3.5, (Math.random() - 0.5) * 3.5, Math.random() * 5 + 2)); break;
+            case 5: for (let i = 0; i < 4; i++) particleArray.push(new Particle(this.x, this.y, "#ff8a80", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 5 + 2)); break;
+            case 6: for (let i = 0; i < 4; i++) particleArray.push(new Particle(this.x, this.y, "#7986cb", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 5 + 2)); break;
+            case 7: for (let i = 0; i < 4; i++) particleArray.push(new Particle(this.x, this.y, "#80cbc4", (Math.random() - 0.5) * 3.5, (Math.random() - 0.5) * 3.5, Math.random() * 6 + 2)); break;
+            case 8: for (let i = 0; i < 5; i++) particleArray.push(new Particle(this.x, this.y, "#ff80ab", (Math.random() - 0.5) * 4.5, (Math.random() - 0.5) * 4.5, Math.random() * 5 + 2)); break;
+            case 9: for (let i = 0; i < 5; i++) particleArray.push(new Particle(this.x, this.y, "#ffb74d", (Math.random() - 0.5) * 4, -Math.random() * 3 - 1, Math.random() * 6 + 2)); break;
+            case 10: for (let i = 0; i < 5; i++) particleArray.push(new Particle(this.x, this.y, "#ffd700", (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, Math.random() * 6 + 2)); break;
+          }
+          return;
+        }
+
+        switch (this.element) {
+          case 'lightning':
+            for (let i = 0; i < 4; i++) {
+              const angle = Math.random() * Math.PI * 2;
+              const dist = Math.random() * size * 1.8;
+              particleArray.push(new Particle(this.x + Math.cos(angle) * dist, this.y + Math.sin(angle) * dist, "#ffff00", (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, Math.random() * 5 + 2));
+            }
+            break;
+          case 'water':
+            for (let i = 0; i < 5; i++) {
+              const angle = Math.random() * Math.PI * 2;
+              const speed = Math.random() * 4 + 1;
+              particleArray.push(new Particle(this.x, this.y, "#00e5ff", Math.cos(angle) * speed, Math.sin(angle) * speed, Math.random() * 6 + 2));
+            }
+            break;
+          case 'fire':
+            for (let i = 0; i < 6; i++) {
+              particleArray.push(new Particle(this.x + (Math.random() - 0.5) * size, this.y + (Math.random() - 0.5) * size, Math.random() < 0.5 ? "#ff3d00" : "#ffab00", (Math.random() - 0.5) * 3, -Math.random() * 4 - 1, Math.random() * 7 + 2));
+            }
+            break;
+          case 'shadow':
+            for (let i = 0; i < 5; i++) {
+              const angle = Math.random() * Math.PI * 2;
+              const dist = size * 1.4;
+              particleArray.push(new Particle(this.x + Math.cos(angle) * dist, this.y + Math.sin(angle) * dist, "#ea80fc", -Math.cos(angle) * 2, -Math.sin(angle) * 2, Math.random() * 5 + 1.5));
+            }
+            break;
+          case 'celestial':
+          default:
+            for (let i = 0; i < 5; i++) {
+              const angle = Math.random() * Math.PI * 2;
+              const speed = Math.random() * 3 + 1;
+              particleArray.push(new Particle(this.x, this.y, `hsl(${Math.random() * 360}, 100%, 80%)`, Math.cos(angle) * speed, Math.sin(angle) * speed, Math.random() * 5 + 2));
+            }
+            break;
+        }
+      }
+
+      draw(ctx) {
+        const stage = this.getStage();
+        const size = this.getSize();
+        const flipperAngle = Math.sin(this.flipperSwimTimer) * 0.35;
+        const style = this.getElementColors();
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        if (this.abilityTimer > 0) {
+          this.drawAbilityFX(ctx, size, style);
+        }
+
+        ctx.rotate(this.angle + Math.PI / 2);
+
+        if (stage >= 2) {
+          ctx.shadowBlur = this.abilityTimer > 0 ? 60 : Math.min(40, 10 + stage * 3);
+          ctx.shadowColor = style.aura;
+        }
+
+        if (stage >= 11) {
+          ctx.save();
+          ctx.strokeStyle = style.secondary;
+          ctx.lineWidth = 3 + Math.floor((stage - 10) / 2);
+          ctx.beginPath();
+          ctx.ellipse(0, -size * 1.2, size * 0.5, size * 0.15, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Left Flipper
+        ctx.fillStyle = style.primary;
+        ctx.save();
+        ctx.translate(-size * 0.55, -size * 0.25);
+        ctx.rotate(-0.5 + flipperAngle);
+        ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+
+        // Right Flipper
+        ctx.save();
+        ctx.translate(size * 0.55, -size * 0.25);
+        ctx.rotate(0.5 - flipperAngle);
+        ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+
+        // Head
+        ctx.fillStyle = style.primary;
+        ctx.beginPath(); ctx.arc(0, -size * 0.75, size * 0.3, 0, Math.PI * 2); ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(-size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
+        ctx.arc(size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pupils
+        ctx.fillStyle = stage >= 11 ? style.secondary : "#000000";
+        ctx.beginPath();
+        ctx.arc(-size * 0.12, -size * 0.87, size * 0.03, 0, Math.PI * 2);
+        ctx.arc(size * 0.12, -size * 0.87, size * 0.03, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Shell
+        ctx.fillStyle = style.primary;
+        ctx.beginPath(); ctx.ellipse(0, 0, size * 0.65, size * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.lineWidth = 2.5; ctx.strokeStyle = style.secondary; ctx.stroke();
+
+        // Hex Pattern
+        ctx.strokeStyle = style.secondary;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        const hexRadius = size * 0.25;
+        for (let i = 0; i < 6; i++) {
+          const a = (Math.PI / 3) * i;
+          const hx = hexRadius * Math.cos(a);
+          const hy = hexRadius * Math.sin(a);
+          if (i === 0) ctx.moveTo(hx, hy);
+          else ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        if (stage >= 4) {
+          ctx.beginPath();
+          ctx.moveTo(0, -hexRadius); ctx.lineTo(0, -size * 0.65);
+          ctx.moveTo(0, hexRadius); ctx.lineTo(0, size * 0.65);
+          ctx.moveTo(-hexRadius, 0); ctx.lineTo(-size * 0.5, 0);
+          ctx.moveTo(hexRadius, 0); ctx.lineTo(size * 0.5, 0);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+
+        // Student Label
+        ctx.save();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 13px 'Fredoka', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`${this.name}`, this.x, this.y + size + 16);
+
+        ctx.fillStyle = style.secondary;
+        ctx.font = "11px 'Fredoka', sans-serif";
+        ctx.fillText(`${this.getStageTitle()} • ${this.points} pts`, this.x, this.y + size + 30);
+        ctx.restore();
+      }
+
+      drawAbilityFX(ctx, size, style) {
+        const stage = this.getStage();
+        ctx.save();
+
+        if (stage < 11) {
+          const pulseRadius = size * 1.3 + Math.sin(this.abilityTimer * 0.15) * (size * 0.3);
+          ctx.strokeStyle = style.secondary;
+          ctx.lineWidth = 3 + Math.floor(stage / 2);
+          ctx.beginPath();
+          ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          if (this.element === 'lightning') {
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 4; i++) {
+              ctx.beginPath();
+              ctx.moveTo(0, 0);
+              let lx = 0, ly = 0;
+              for (let j = 0; j < 5; j++) {
+                lx += (Math.random() - 0.5) * (size * 1.2);
+                ly += (Math.random() - 0.5) * (size * 1.2);
+                ctx.lineTo(lx, ly);
+              }
+              ctx.stroke();
+            }
+          } else if (this.element === 'water') {
+            const ringRadius = ((600 - this.abilityTimer) % 90) * (size * 0.04);
+            ctx.strokeStyle = "rgba(0, 229, 255, 0.85)";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+            ctx.stroke();
+          } else if (this.element === 'shadow') {
+            ctx.fillStyle = "rgba(49, 27, 146, 0.45)";
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 1.6, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+    }
+
+    // --- Backend Data & Application Logic ---
+    async function fetchSheetData() {
+      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
+        classroomData = {
+          "Mr. Smith": { 
+            "Science Section A": [
+              { name: "Alex", totalPoints: 1050, activities: [{ activity: "Quiz 1", points: 1050, date: new Date().toLocaleDateString() }] },
+              { name: "Emma", totalPoints: 450, activities: [{ activity: "Homework 1", points: 450, date: new Date().toLocaleDateString() }] }
+            ] 
+          },
+          "Ms. Davis": { 
+            "Math Grade 5": [
+              { name: "Jordan", totalPoints: 220, activities: [{ activity: "Classwork", points: 220, date: new Date().toLocaleDateString() }] }
+            ] 
+          }
+        };
+        updateTeacherDropdown();
+        populateStudentTeacherDropdown();
+        return;
+      }
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL);
+        classroomData = await res.json();
+        if (!classroomData || Object.keys(classroomData).length === 0) {
+          classroomData = { "Default Teacher": { "Class 1": [] } };
+        }
+        updateTeacherDropdown();
+        populateStudentTeacherDropdown();
+      } catch (err) {
+        console.warn("Using local fallback data:", err);
+        if (Object.keys(classroomData).length === 0) {
+          classroomData = { "Default Teacher": { "Class 1": [] } };
+        }
+        updateTeacherDropdown();
+        populateStudentTeacherDropdown();
+      }
+    }
+
+    // Teacher Admin Dropdowns
+    function updateTeacherDropdown() {
+      const dropdown = document.getElementById("teacherDropdown");
+      if (!dropdown) return;
+      dropdown.innerHTML = "";
+
+      const teachers = Object.keys(classroomData);
+      teachers.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t; opt.textContent = t;
+        dropdown.appendChild(opt);
+      });
+
+      if (!activeTeacher || !classroomData[activeTeacher]) activeTeacher = teachers[0] || "";
+      dropdown.value = activeTeacher;
+      updateClassDropdown();
+    }
+
+    function updateClassDropdown() {
+      const dropdown = document.getElementById("classDropdown");
+      if (!dropdown) return;
+      dropdown.innerHTML = "";
+
+      const teacherClasses = classroomData[activeTeacher] || {};
+      const classNames = Object.keys(teacherClasses);
+
+      if (classNames.length === 0) {
+        dropdown.innerHTML = `<option value="">No classes created</option>`;
+        activeClass = "";
+        loadClassroom("");
+        return;
+      }
+
+      classNames.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c; opt.textContent = c;
+        dropdown.appendChild(opt);
+      });
+
+      if (!activeClass || !teacherClasses[activeClass]) activeClass = classNames[0];
+      dropdown.value = activeClass;
+      loadClassroom(activeClass);
+    }
+
+    function loadClassroom(className) {
+      activeClass = className;
+      document.getElementById("activeClassTitle").textContent = className ? `Class: ${className}` : "No Class Selected";
+      document.getElementById("activeTeacherSubtitle").textContent = `Teacher: ${activeTeacher || "None"}`;
+
+      const students = (classroomData[activeTeacher] && classroomData[activeTeacher][className]) ? classroomData[activeTeacher][className] : [];
+      teacherTurtles = students.map(s => new Turtle(s.name, s.totalPoints, tCanvas));
+
+      populateStudentCheckboxes(students);
+      populateActivityHistory(students);
+      renderLeaderboard(students);
+      renderStudentRoster(students);
+    }
+
+    function populateStudentCheckboxes(students) {
+      const container = document.getElementById("studentCheckboxContainer");
+      if (!container) return;
+      container.innerHTML = "";
+
+      if (students.length === 0) {
+        container.innerHTML = `<div class="text-xs text-gray-400 italic text-center py-2">No students loaded</div>`;
+        return;
+      }
+
+      students.forEach(s => {
+        const label = document.createElement("label");
+        label.className = "flex items-center gap-2 text-xs text-gray-200 cursor-pointer hover:text-accent-cyan";
+        label.innerHTML = `
+          <input type="checkbox" class="student-checkbox rounded bg-input-bg border-border-dark" value="${s.name}" />
+          <span>${s.name} (${s.totalPoints} pts)</span>
+        `;
+        container.appendChild(label);
+      });
+    }
+
+    function populateActivityHistory(students) {
+      const datalist = document.getElementById("activityHistoryList");
+      if (!datalist) return;
+      datalist.innerHTML = "";
+
+      const unique = new Set();
+      students.forEach(s => {
+        if (s.activities) {
+          s.activities.forEach(a => {
+            if (a.activity && a.activity !== "Initial Registration") unique.add(a.activity);
+          });
+        }
+      });
+
+      unique.forEach(act => {
+        const opt = document.createElement("option");
+        opt.value = act;
+        datalist.appendChild(opt);
+      });
+    }
+
+    function renderLeaderboard(students) {
+      const list = document.getElementById("leaderboardList");
+      if (!list) return;
+      list.innerHTML = "";
+
+      if (students.length === 0) {
+        list.innerHTML = `<div class="text-xs text-gray-400 italic text-center py-2">No students ranked yet</div>`;
+        return;
+      }
+
+      const sorted = [...students].sort((a, b) => b.totalPoints - a.totalPoints);
+      let currentRank = 1;
+
+      sorted.forEach((student, index) => {
+        if (index > 0 && student.totalPoints < sorted[index - 1].totalPoints) {
+          currentRank = index + 1;
+        }
+
+        const item = document.createElement("div");
+        const rankClass = currentRank <= 3 ? `top-${currentRank}` : "";
+        item.className = `rank-item ${rankClass}`;
+
+        let medal = `#${currentRank}`;
+        if (currentRank === 1) medal = "🥇";
+        if (currentRank === 2) medal = "🥈";
+        if (currentRank === 3) medal = "🥉";
+
+        item.innerHTML = `
+          <span><span class="rank-badge">${medal}</span> <b>${student.name}</b></span>
+          <span class="font-bold">${student.totalPoints} pts</span>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function renderStudentRoster(students) {
+      const list = document.getElementById("studentList");
+      if (!list) return;
+      list.innerHTML = "";
+
+      students.forEach(student => {
+        const card = document.createElement("div");
+        card.className = "student-card";
+        card.innerHTML = `
+          <span class="text-xs"><b>${student.name}</b> (${student.totalPoints} pts)</span>
+          <button class="bg-accent-blue hover:bg-blue-600 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1" onclick="openStudentReport('${student.name}')">
+            <i data-lucide="file-text" class="w-3 h-3"></i> Log
+          </button>
+        `;
+        list.appendChild(card);
+      });
+      initIcons();
+    }
+
+    // --- Student Viewer Portal Dropdowns ---
+    function populateStudentTeacherDropdown() {
+      const dropdown = document.getElementById("studentTeacherSelect");
+      if (!dropdown) return;
+      dropdown.innerHTML = '<option value="">Select Teacher...</option>';
+
+      const teachers = Object.keys(classroomData);
+      teachers.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t; opt.textContent = t;
+        dropdown.appendChild(opt);
+      });
+
+      if (studentSelectedTeacher && classroomData[studentSelectedTeacher]) {
+        dropdown.value = studentSelectedTeacher;
+      }
+      populateStudentClassDropdown();
+    }
+
+    function populateStudentClassDropdown() {
+      const dropdown = document.getElementById("studentClassSelect");
+      if (!dropdown) return;
+      dropdown.innerHTML = '<option value="">Select Section...</option>';
+
+      if (!studentSelectedTeacher || !classroomData[studentSelectedTeacher]) {
+        loadStudentAquarium("");
+        return;
+      }
+
+      const classes = Object.keys(classroomData[studentSelectedTeacher]);
+      classes.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c; opt.textContent = c;
+        dropdown.appendChild(opt);
+      });
+
+      if (studentSelectedClass && classroomData[studentSelectedTeacher][studentSelectedClass]) {
+        dropdown.value = studentSelectedClass;
+      }
+      loadStudentAquarium(dropdown.value);
+    }
+
+    function loadStudentAquarium(className) {
+      studentSelectedClass = className;
+      document.getElementById("studentActiveTitle").textContent = className ? `Section: ${className}` : "Select a Section";
+      document.getElementById("studentActiveSubtitle").textContent = studentSelectedTeacher ? `Teacher: ${studentSelectedTeacher}` : "Select Teacher above";
+
+      const students = (classroomData[studentSelectedTeacher] && classroomData[studentSelectedTeacher][className]) ? classroomData[studentSelectedTeacher][className] : [];
+      studentTurtles = students.map(s => new Turtle(s.name, s.totalPoints, sCanvas));
+
+      renderStudentDrawerRoster(students);
+    }
+
+    function renderStudentDrawerRoster(students) {
+      const list = document.getElementById("studentDrawerRosterList");
+      if (!list) return;
+      list.innerHTML = "";
+
+      if (students.length === 0) {
+        list.innerHTML = `<div class="text-xs text-gray-400 italic text-center py-4">No students loaded</div>`;
+        return;
+      }
+
+      const searchVal = (document.getElementById("studentSearchInput")?.value || "").toLowerCase();
+      const filtered = students.filter(s => s.name.toLowerCase().includes(searchVal));
+
+      const sorted = [...filtered].sort((a, b) => b.totalPoints - a.totalPoints);
+
+      sorted.forEach((s, idx) => {
+        const t = new Turtle(s.name, s.totalPoints, sCanvas);
+        const card = document.createElement("div");
+        card.className = "bg-card-bg border border-border-active rounded-xl p-2.5 flex flex-col gap-1";
+        card.innerHTML = `
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-white">#${idx + 1} ${s.name}</span>
+            <span class="text-accent-gold font-bold">${s.totalPoints} pts</span>
+          </div>
+          <div class="text-[10px] text-accent-cyan">${t.getStageTitle()}</div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    document.getElementById("studentSearchInput")?.addEventListener("input", () => {
+      const students = (classroomData[studentSelectedTeacher] && classroomData[studentSelectedTeacher][studentSelectedClass]) ? classroomData[studentSelectedTeacher][studentSelectedClass] : [];
+      renderStudentDrawerRoster(students);
+    });
+
+    document.getElementById("studentTeacherSelect")?.addEventListener("change", (e) => {
+      studentSelectedTeacher = e.target.value;
+      populateStudentClassDropdown();
+    });
+
+    document.getElementById("studentClassSelect")?.addEventListener("change", (e) => {
+      loadStudentAquarium(e.target.value);
+    });
+
+    // Award Points Action
+    document.getElementById("submitActivityBtn")?.addEventListener("click", async () => {
+      const checkedBoxes = document.querySelectorAll(".student-checkbox:checked");
+      const selectedStudents = Array.from(checkedBoxes).map(cb => cb.value);
+      const activityTitle = document.getElementById("activityTitleInput").value.trim() || "Activity Points";
+      const points = parseInt(document.getElementById("activityPointsInput").value, 10);
+
+      if (!activeTeacher || !activeClass || selectedStudents.length === 0 || isNaN(points)) {
+        alert("Please select a teacher, class, at least one student, and enter valid points!");
+        return;
+      }
+
+      const currentDate = new Date().toLocaleDateString();
+
+      selectedStudents.forEach(studentName => {
+        const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
+        if (student) {
+          student.totalPoints += points;
+          if (!student.activities) student.activities = [];
+          student.activities.push({ activity: activityTitle, points: points, date: currentDate });
+        }
+
+        const tTurtle = teacherTurtles.find(t => t.name === studentName);
+        if (tTurtle) {
+          tTurtle.points += points;
+          tTurtle.triggerAbility();
+        }
+
+        const sTurtle = studentTurtles.find(t => t.name === studentName);
+        if (sTurtle) {
+          sTurtle.points += points;
+          sTurtle.triggerAbility();
+        }
+      });
+
+      const students = classroomData[activeTeacher][activeClass];
+      populateStudentCheckboxes(students);
+      populateActivityHistory(students);
+      renderLeaderboard(students);
+      renderStudentRoster(students);
+
+      document.getElementById("activityTitleInput").value = "";
+      document.getElementById("activityPointsInput").value = "";
+
+      if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
+        try {
+          await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "addBulkActivityPoints",
+              teacherName: activeTeacher,
+              className: activeClass,
+              studentsList: selectedStudents,
+              activityName: activityTitle,
+              points: points
+            })
+          });
+        } catch (e) { console.error(e); }
+      }
+    });
+
+    // Log Modal
+    window.openStudentReport = function(studentName) {
+      selectedStudentForReport = studentName;
+      const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
+      if (!student) return;
+
+      document.getElementById("modalStudentName").textContent = `${student.name}'s Activity Log`;
+      const tbody = document.getElementById("modalActivityTableBody");
+      tbody.innerHTML = "";
+
+      if (!student.activities || student.activities.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center p-3 text-gray-400">No activity records found.</td></tr>`;
+      } else {
+        student.activities.forEach(act => {
+          const row = document.createElement("tr");
+          row.className = "border-b border-border-dark hover:bg-panel-bg";
+          row.innerHTML = `<td class="p-2.5">${act.date}</td><td class="p-2.5">${act.activity}</td><td class="p-2.5 font-bold text-accent-teal">+${act.points}</td>`;
+          tbody.appendChild(row);
+        });
+      }
+
+      const modal = document.getElementById("activityModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      initIcons();
+    };
+
+    // Single PDF Export
+    document.getElementById("printSingleReportBtn")?.addEventListener("click", () => {
+      const student = classroomData[activeTeacher][activeClass].find(s => s.name === selectedStudentForReport);
+      if (!student) return;
+
+      const printArea = document.getElementById("printableReport");
+      let rowsHtml = (student.activities || []).map(a => `
+        <tr>
+          <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px;">${a.date}</td>
+          <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px;">${a.activity}</td>
+          <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; font-weight: bold;">+${a.points}</td>
+        </tr>
+      `).join("");
+
+      printArea.innerHTML = `
+        <div style="font-family: Arial, sans-serif; color: #000; padding: 10px;">
+          <h1 style="font-size: 24px; margin-bottom: 6px;">Student Activity & Points Report</h1>
+          <h3 style="font-size: 14px; color: #444; margin-bottom: 20px;">
+            <b>Teacher:</b> ${activeTeacher} &nbsp;|&nbsp; 
+            <b>Class:</b> ${activeClass} &nbsp;|&nbsp; 
+            <b>Student:</b> ${student.name} &nbsp;|&nbsp; 
+            <b>Total Points:</b> ${student.totalPoints}
+          </h3>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+              <tr style="background: #f0f0f0;">
+                <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Date</th>
+                <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Activity Title</th>
+                <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Points Awarded</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      `;
+
+      window.print();
+      printArea.innerHTML = "";
+    });
+
+    // Class PDF Export
+    document.getElementById("printClassReportBtn")?.addEventListener("click", () => {
+      const students = (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) ? classroomData[activeTeacher][activeClass] : [];
+      const printArea = document.getElementById("printableReport");
+
+      let rowsHtml = students.map(s => `
+        <tr>
+          <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; font-weight: bold;">${s.name}</td>
+          <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; text-align: center;">${s.totalPoints}</td>
+          <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; text-align: center;">${s.activities ? s.activities.length : 0} activities</td>
+        </tr>
+      `).join("");
+
+      printArea.innerHTML = `
+        <div style="font-family: Arial, sans-serif; color: #000; padding: 10px;">
+          <h1 style="font-size: 24px; margin-bottom: 6px;">Classroom Summary Report</h1>
+          <h3 style="font-size: 14px; color: #444; margin-bottom: 20px;">
+            <b>Teacher:</b> ${activeTeacher} &nbsp;|&nbsp; 
+            <b>Class:</b> ${activeClass} &nbsp;|&nbsp; 
+            <b>Date:</b> ${new Date().toLocaleDateString()}
+          </h3>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+              <tr style="background: #f0f0f0;">
+                <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Student Name</th>
+                <th style="border: 1px solid #ccc; padding: 10px; text-align: center; font-size: 14px;">Total Accumulated Points</th>
+                <th style="border: 1px solid #ccc; padding: 10px; text-align: center; font-size: 14px;">Total Activities Completed</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      `;
+
+      window.print();
+      printArea.innerHTML = "";
+    });
+
+    // Creation Event Handlers
+    document.getElementById("createTeacherBtn")?.addEventListener("click", () => {
+      const input = document.getElementById("newTeacherInput");
+      const name = input.value.trim();
+      if (!name) return;
+      if (!classroomData[name]) classroomData[name] = {};
+      activeTeacher = name;
+      input.value = "";
+      updateTeacherDropdown();
+      populateStudentTeacherDropdown();
+    });
+
+    document.getElementById("createClassBtn")?.addEventListener("click", async () => {
+      const input = document.getElementById("newClassInput");
+      const className = input.value.trim();
+      if (!activeTeacher || !className) return;
+
+      activeClass = className;
+      if (!classroomData[activeTeacher]) classroomData[activeTeacher] = {};
+      classroomData[activeTeacher][className] = [];
+      input.value = "";
+      updateClassDropdown();
+      populateStudentClassDropdown();
+    });
+
+    document.getElementById("addStudentsBtn")?.addEventListener("click", async () => {
+      const textarea = document.getElementById("bulkStudentInput");
+      const names = textarea.value.split("\n").map(n => n.trim()).filter(n => n.length > 0);
+      if (!activeTeacher || !activeClass || names.length === 0) return;
+
+      textarea.value = "";
+      names.forEach(n => classroomData[activeTeacher][activeClass].push({ name: n, totalPoints: 0, activities: [] }));
+      loadClassroom(activeClass);
+      loadStudentAquarium(activeClass);
+    });
+
+    document.getElementById("teacherDropdown")?.addEventListener("change", (e) => {
+      activeTeacher = e.target.value;
+      updateClassDropdown();
+    });
+
+    document.getElementById("classDropdown")?.addEventListener("change", (e) => {
+      loadClassroom(e.target.value);
+    });
+
+    document.getElementById("syncSheetBtn")?.addEventListener("click", fetchSheetData);
+
+    // Render Animation Loops
+    function animate() {
+      // Teacher Canvas Loop
+      if (tCtx && tCanvas) {
+        tCtx.clearRect(0, 0, tCanvas.width, tCanvas.height);
+        for (let i = teacherParticles.length - 1; i >= 0; i--) {
+          teacherParticles[i].update();
+          teacherParticles[i].draw(tCtx);
+          if (teacherParticles[i].alpha <= 0) teacherParticles.splice(i, 1);
+        }
+        teacherTurtles.forEach(turtle => {
+          turtle.update(teacherParticles);
+          turtle.draw(tCtx);
+        });
+      }
+
+      // Student Canvas Loop
+      if (sCtx && sCanvas) {
+        sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+        for (let i = studentParticles.length - 1; i >= 0; i--) {
+          studentParticles[i].update();
+          studentParticles[i].draw(sCtx);
+          if (studentParticles[i].alpha <= 0) studentParticles.splice(i, 1);
+        }
+        studentTurtles.forEach(turtle => {
+          turtle.update(studentParticles);
+          turtle.draw(sCtx);
+        });
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Startup Initialization
+    window.addEventListener("load", () => {
+      initIcons();
+      resizeCanvases();
+      fetchSheetData();
+      animate();
+    });
+  </script>
 </body>
 </html>
