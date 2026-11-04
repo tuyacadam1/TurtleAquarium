@@ -5,7 +5,6 @@ function initIcons() {
 }
 
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykX4o72pPfgO7h4EYY3mk0dwssrG_8plN_9uWA0shgMWTro-uLXWyt4bqDkMmICGxEhQ/exec";
-const DEFAULT_PASSCODE = "gcc-computer";
 
 let classroomData = {};
 let activeTeacher = "";
@@ -19,63 +18,97 @@ let studentAbilityInterval = null;
 document.addEventListener("DOMContentLoaded", () => {
   initIcons();
 
-  const roleOverlay = document.getElementById("roleSelectionOverlay");
+  // Determine current page mode from <body data-mode="...">
+  const pageMode = document.body.getAttribute("data-mode") || "student";
+  userRole = pageMode;
+
   const passwordOverlay = document.getElementById("passwordLockOverlay");
   const passcodeInput = document.getElementById("passcodeInput");
   const unlockBtn = document.getElementById("unlockBtn");
-  const cancelLockBtn = document.getElementById("cancelLockBtn");
   const lockErrorMessage = document.getElementById("lockErrorMessage");
-  const switchRoleBtn = document.getElementById("switchRoleBtn");
 
-  const selectStudentBtn = document.getElementById("selectStudentRoleBtn");
-  const selectTeacherBtn = document.getElementById("selectTeacherRoleBtn");
   const teacherAdminControls = document.getElementById("teacherAdminControls");
   const rosterPanel = document.getElementById("rosterPanel");
 
-  selectStudentBtn.addEventListener("click", () => {
-    userRole = "student";
-    roleOverlay.style.display = "none";
-    teacherAdminControls.style.display = "none";
-    rosterPanel.style.display = "none";
+  if (pageMode === "student") {
+    if (teacherAdminControls) teacherAdminControls.style.display = "none";
+    if (rosterPanel) rosterPanel.style.display = "none";
     startStudentAbilityCycle();
-  });
+  } else if (pageMode === "teacher") {
+    // In teacher mode, require server-side passcode verification
+    if (passwordOverlay) passwordOverlay.style.display = "flex";
+    if (passcodeInput) passcodeInput.focus();
+    stopStudentAbilityCycle();
+  }
 
-  selectTeacherBtn.addEventListener("click", () => {
-    roleOverlay.style.display = "none";
-    passwordOverlay.style.display = "flex";
-    passcodeInput.focus();
-  });
+  // Secure Server-Side Passcode Verification
+  async function unlockAdmin() {
+    if (!passcodeInput) return;
+    const enteredPasscode = passcodeInput.value.trim();
 
-  function unlockAdmin() {
-    if (passcodeInput.value.trim() === DEFAULT_PASSCODE) {
-      userRole = "teacher";
-      passwordOverlay.style.display = "none";
-      lockErrorMessage.style.display = "none";
-      passcodeInput.value = "";
-      teacherAdminControls.style.display = "flex";
-      rosterPanel.style.display = "flex";
-      stopStudentAbilityCycle();
-    } else {
-      lockErrorMessage.style.display = "block";
-      passcodeInput.value = "";
-      passcodeInput.focus();
+    if (!enteredPasscode) {
+      if (lockErrorMessage) {
+        lockErrorMessage.textContent = "Please enter a passcode.";
+        lockErrorMessage.style.display = "block";
+      }
+      return;
+    }
+
+    if (unlockBtn) {
+      unlockBtn.disabled = true;
+      unlockBtn.innerHTML = `<i data-lucide="loader-2"></i> Verifying...`;
+      initIcons();
+    }
+
+    try {
+      const response = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+          action: "verifyPasscode",
+          passcode: enteredPasscode
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.authorized) {
+        userRole = "teacher";
+        if (passwordOverlay) passwordOverlay.style.display = "none";
+        if (lockErrorMessage) lockErrorMessage.style.display = "none";
+        passcodeInput.value = "";
+        if (teacherAdminControls) teacherAdminControls.style.display = "flex";
+        if (rosterPanel) rosterPanel.style.display = "flex";
+        stopStudentAbilityCycle();
+      } else {
+        if (lockErrorMessage) {
+          lockErrorMessage.textContent = "Incorrect passcode. Access denied!";
+          lockErrorMessage.style.display = "block";
+        }
+        passcodeInput.value = "";
+        passcodeInput.focus();
+      }
+    } catch (error) {
+      console.error("Authentication error:", error);
+      if (lockErrorMessage) {
+        lockErrorMessage.textContent = "Error connecting to server. Try again!";
+        lockErrorMessage.style.display = "block";
+      }
+    } finally {
+      if (unlockBtn) {
+        unlockBtn.disabled = false;
+        unlockBtn.innerHTML = `<i data-lucide="key-round"></i> Unlock Dashboard`;
+        initIcons();
+      }
     }
   }
 
-  unlockBtn.addEventListener("click", unlockAdmin);
-  passcodeInput.addEventListener("keyup", (e) => {
-    if (e.key === "Enter") unlockAdmin();
-  });
-
-  cancelLockBtn.addEventListener("click", () => {
-    passwordOverlay.style.display = "none";
-    roleOverlay.style.display = "flex";
-  });
-
-  switchRoleBtn.addEventListener("click", () => {
-    stopStudentAbilityCycle();
-    roleOverlay.style.display = "flex";
-  });
+  if (unlockBtn) unlockBtn.addEventListener("click", unlockAdmin);
+  if (passcodeInput) {
+    passcodeInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") unlockAdmin();
+    });
+  }
 
   document.getElementById("toggleSidebarBtn")?.addEventListener("click", () => {
     document.getElementById("appSidebar").classList.toggle("open");
@@ -94,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Student Ability Auto-Trigger: 1 Random Turtle every 5 seconds (5-second duration)
+// Student Ability Auto-Trigger
 function startStudentAbilityCycle() {
   stopStudentAbilityCycle();
   
