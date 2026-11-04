@@ -31,7 +31,21 @@ body {
   overflow: hidden;
 }
 
-/* Lucide Icons Alignment */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--input-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-active);
+}
+
 svg.lucide {
   width: 16px;
   height: 16px;
@@ -39,8 +53,8 @@ svg.lucide {
   vertical-align: middle;
 }
 
-/* Security Lock Overlay */
-#passwordLockOverlay {
+/* Modal / Security / Role Overlays */
+.overlay-screen {
   position: fixed;
   inset: 0;
   background: rgba(2, 13, 24, 0.96);
@@ -52,18 +66,25 @@ svg.lucide {
   padding: 16px;
 }
 
-.lock-card {
+/* FIX: Guaranteed pointer-event release when hidden */
+.overlay-screen[style*="display: none"],
+.overlay-screen.hidden {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.modal-card {
   background: var(--panel-bg);
   padding: 36px 28px;
   border-radius: 16px;
   border: 2px solid var(--border-color);
   text-align: center;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
-  max-width: 400px;
+  max-width: 440px;
   width: 100%;
 }
 
-.lock-card h2 {
+.modal-card h2 {
   color: var(--accent-cyan);
   margin-bottom: 8px;
   font-size: 24px;
@@ -73,10 +94,48 @@ svg.lucide {
   gap: 8px;
 }
 
-.lock-card p {
+.modal-card p {
   color: var(--text-muted);
   font-size: 14px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.role-btn {
+  background: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px 14px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.role-btn:hover {
+  border-color: var(--accent-cyan);
+  transform: translateY(-2px);
+  background: #113052;
+}
+
+.role-btn svg {
+  width: 32px;
+  height: 32px;
+  color: var(--accent-cyan);
+}
+
+.role-btn span {
+  font-weight: 600;
+  font-size: 15px;
 }
 
 .lock-card input {
@@ -179,7 +238,7 @@ svg.lucide {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 180px;
+  max-height: 220px;
   overflow-y: auto;
 }
 
@@ -286,6 +345,11 @@ textarea {
   border: 1px solid var(--border-color);
 }
 
+.card-actions {
+  display: flex;
+  gap: 4px;
+}
+
 /* Canvas Area */
 .aquarium-container {
   flex: 1;
@@ -313,8 +377,10 @@ textarea {
   letter-spacing: 0.5px;
 }
 
-.aquarium-overlay button {
+.aquarium-overlay div {
   pointer-events: auto;
+  display: flex;
+  gap: 8px;
 }
 
 canvas {
@@ -330,63 +396,29 @@ canvas {
 }
 
 @media print {
-  body * {
-    display: none !important;
-  }
-
-  #printableReport,
-  #printableReport * {
-    display: revert !important;
-  }
-
+  body * { display: none !important; }
+  #printableReport, #printableReport * { display: revert !important; }
   #printableReport {
     display: block !important;
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    color: #000;
-    background: #fff;
-    padding: 20px;
+    position: absolute; left: 0; top: 0; width: 100%;
+    color: #000; background: #fff; padding: 20px;
   }
 }
 
 /* Mobile Media Queries */
 @media (max-width: 850px) {
-  .aquarium-app {
-    flex-direction: column;
-  }
-
+  .aquarium-app { flex-direction: column; }
   .mobile-navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--panel-bg);
-    padding: 12px 18px;
-    border-bottom: 1px solid var(--border-color);
-    z-index: 30;
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--panel-bg); padding: 12px 18px;
+    border-bottom: 1px solid var(--border-color); z-index: 30;
   }
-
-  .mobile-navbar h2 {
-    font-size: 18px;
-    color: var(--accent-cyan);
-  }
-
+  .mobile-navbar h2 { font-size: 18px; color: var(--accent-cyan); }
   .sidebar {
-    position: absolute;
-    top: 57px;
-    left: 0;
-    width: 100%;
-    height: calc(100vh - 57px);
-    transform: translateX(-100%);
+    position: absolute; top: 57px; left: 0; width: 100%;
+    height: calc(100vh - 57px); transform: translateX(-100%);
     box-shadow: 6px 0 20px rgba(0, 0, 0, 0.7);
   }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .aquarium-container {
-    height: calc(100vh - 57px);
-  }
+  .sidebar.open { transform: translateX(0); }
+  .aquarium-container { height: calc(100vh - 57px); }
 }
