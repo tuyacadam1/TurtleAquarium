@@ -331,11 +331,11 @@
     .btn.danger { background: var(--accent-danger); color: white; font-size: 12px; padding: 6px 10px; }
     .btn.small { padding: 4px 8px; font-size: 11px; }
 
-    /* Student Directory & Archive List */
+    /* Student Directory */
     .student-feed-panel { flex: 1; }
 
-    .student-list, .archive-list {
-      max-height: 220px;
+    .student-list {
+      max-height: 240px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -563,14 +563,6 @@
       <div id="rosterPanel" class="control-box student-feed-panel">
         <h3><i data-lucide="list"></i> Active Student Roster</h3>
         <div id="studentList" class="student-list"></div>
-      </div>
-
-      <!-- Student Archive Panel (Teacher Only) -->
-      <div id="archivePanel" class="control-box">
-        <h3><i data-lucide="archive"></i> Student Archive</h3>
-        <div id="archiveList" class="archive-list">
-          <div class="empty-msg">No archived students</div>
-        </div>
       </div>
     </aside>
 
