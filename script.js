@@ -18,27 +18,46 @@ let studentAbilityInterval = null;
 document.addEventListener("DOMContentLoaded", () => {
   initIcons();
 
-  // Determine current page mode from <body data-mode="...">
-  const pageMode = document.body.getAttribute("data-mode") || "student";
-  userRole = pageMode;
-
+  const roleOverlay = document.getElementById("roleSelectionOverlay");
   const passwordOverlay = document.getElementById("passwordLockOverlay");
   const passcodeInput = document.getElementById("passcodeInput");
   const unlockBtn = document.getElementById("unlockBtn");
+  const cancelLockBtn = document.getElementById("cancelLockBtn");
   const lockErrorMessage = document.getElementById("lockErrorMessage");
+  const switchRoleBtn = document.getElementById("switchRoleBtn");
 
+  const selectStudentBtn = document.getElementById("selectStudentRoleBtn");
+  const selectTeacherBtn = document.getElementById("selectTeacherRoleBtn");
   const teacherAdminControls = document.getElementById("teacherAdminControls");
   const rosterPanel = document.getElementById("rosterPanel");
 
-  if (pageMode === "student") {
-    if (teacherAdminControls) teacherAdminControls.style.display = "none";
-    if (rosterPanel) rosterPanel.style.display = "none";
-    startStudentAbilityCycle();
-  } else if (pageMode === "teacher") {
-    // In teacher mode, require server-side passcode verification
-    if (passwordOverlay) passwordOverlay.style.display = "flex";
-    if (passcodeInput) passcodeInput.focus();
-    stopStudentAbilityCycle();
+  // Handle Student Selection
+  if (selectStudentBtn) {
+    selectStudentBtn.addEventListener("click", () => {
+      userRole = "student";
+      if (roleOverlay) {
+        roleOverlay.style.display = "none";
+        roleOverlay.classList.add("hidden");
+      }
+      if (teacherAdminControls) teacherAdminControls.style.display = "none";
+      if (rosterPanel) rosterPanel.style.display = "none";
+      startStudentAbilityCycle();
+    });
+  }
+
+  // Handle Teacher Selection
+  if (selectTeacherBtn) {
+    selectTeacherBtn.addEventListener("click", () => {
+      if (roleOverlay) {
+        roleOverlay.style.display = "none";
+        roleOverlay.classList.add("hidden");
+      }
+      if (passwordOverlay) {
+        passwordOverlay.style.display = "flex";
+        passwordOverlay.classList.remove("hidden");
+      }
+      if (passcodeInput) passcodeInput.focus();
+    });
   }
 
   // Secure Server-Side Passcode Verification
@@ -74,7 +93,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (result.authorized) {
         userRole = "teacher";
-        if (passwordOverlay) passwordOverlay.style.display = "none";
+        if (passwordOverlay) {
+          passwordOverlay.style.display = "none";
+          passwordOverlay.classList.add("hidden");
+        }
         if (lockErrorMessage) lockErrorMessage.style.display = "none";
         passcodeInput.value = "";
         if (teacherAdminControls) teacherAdminControls.style.display = "flex";
@@ -97,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } finally {
       if (unlockBtn) {
         unlockBtn.disabled = false;
-        unlockBtn.innerHTML = `<i data-lucide="key-round"></i> Unlock Dashboard`;
+        unlockBtn.innerHTML = `<i data-lucide="key-round"></i> Unlock`;
         initIcons();
       }
     }
@@ -107,6 +129,29 @@ document.addEventListener("DOMContentLoaded", () => {
   if (passcodeInput) {
     passcodeInput.addEventListener("keyup", (e) => {
       if (e.key === "Enter") unlockAdmin();
+    });
+  }
+
+  if (cancelLockBtn) {
+    cancelLockBtn.addEventListener("click", () => {
+      if (passwordOverlay) {
+        passwordOverlay.style.display = "none";
+        passwordOverlay.classList.add("hidden");
+      }
+      if (roleOverlay) {
+        roleOverlay.style.display = "flex";
+        roleOverlay.classList.remove("hidden");
+      }
+    });
+  }
+
+  if (switchRoleBtn) {
+    switchRoleBtn.addEventListener("click", () => {
+      stopStudentAbilityCycle();
+      if (roleOverlay) {
+        roleOverlay.style.display = "flex";
+        roleOverlay.classList.remove("hidden");
+      }
     });
   }
 
