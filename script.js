@@ -4,10 +4,7 @@ function initIcons() {
   }
 }
 
-// Deployed Google Apps Script Web App URL
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykX4o72pPfgO7h4EYY3mk0dwssrG_8plN_9uWA0shgMWTro-uLXWyt4bqDkMmICGxEhQ/exec";
-
-// Security Passcode Settings
 const DEFAULT_PASSCODE = "gcc-computer";
 
 let classroomData = {};
@@ -16,56 +13,81 @@ let activeClass = "";
 let turtles = [];
 let particles = [];
 let selectedStudentForReport = null;
+let userRole = "student"; 
+let studentAbilityInterval = null;
 
-// Lock Screen & Initial setup
 document.addEventListener("DOMContentLoaded", () => {
   initIcons();
 
-  const overlay = document.getElementById("passwordLockOverlay");
-  const input = document.getElementById("passcodeInput");
+  const roleOverlay = document.getElementById("roleSelectionOverlay");
+  const passwordOverlay = document.getElementById("passwordLockOverlay");
+  const passcodeInput = document.getElementById("passcodeInput");
   const unlockBtn = document.getElementById("unlockBtn");
-  const relockBtn = document.getElementById("relockBtn");
-  const errorMsg = document.getElementById("lockErrorMessage");
-  
-  const sidebar = document.getElementById("appSidebar");
-  const toggleSidebarBtn = document.getElementById("toggleSidebarBtn");
+  const cancelLockBtn = document.getElementById("cancelLockBtn");
+  const lockErrorMessage = document.getElementById("lockErrorMessage");
+  const switchRoleBtn = document.getElementById("switchRoleBtn");
 
-  function attemptUnlock() {
-    if (input.value.trim() === DEFAULT_PASSCODE) {
-      overlay.style.display = "none";
-      errorMsg.style.display = "none";
-      input.value = "";
+  const selectStudentBtn = document.getElementById("selectStudentRoleBtn");
+  const selectTeacherBtn = document.getElementById("selectTeacherRoleBtn");
+  const teacherAdminControls = document.getElementById("teacherAdminControls");
+  const rosterPanel = document.getElementById("rosterPanel");
+  const archivePanel = document.getElementById("archivePanel");
+
+  selectStudentBtn.addEventListener("click", () => {
+    userRole = "student";
+    roleOverlay.style.display = "none";
+    teacherAdminControls.style.display = "none";
+    rosterPanel.style.display = "none";
+    archivePanel.style.display = "none";
+    startStudentAbilityCycle();
+  });
+
+  selectTeacherBtn.addEventListener("click", () => {
+    roleOverlay.style.display = "none";
+    passwordOverlay.style.display = "flex";
+    passcodeInput.focus();
+  });
+
+  function unlockAdmin() {
+    if (passcodeInput.value.trim() === DEFAULT_PASSCODE) {
+      userRole = "teacher";
+      passwordOverlay.style.display = "none";
+      lockErrorMessage.style.display = "none";
+      passcodeInput.value = "";
+      teacherAdminControls.style.display = "flex";
+      rosterPanel.style.display = "flex";
+      archivePanel.style.display = "flex";
+      stopStudentAbilityCycle();
     } else {
-      errorMsg.style.display = "block";
-      input.value = "";
-      input.focus();
+      lockErrorMessage.style.display = "block";
+      passcodeInput.value = "";
+      passcodeInput.focus();
     }
   }
 
-  unlockBtn.addEventListener("click", attemptUnlock);
-  input.addEventListener("keyup", (e) => {
-    if (e.key === "Enter") attemptUnlock();
+  unlockBtn.addEventListener("click", unlockAdmin);
+  passcodeInput.addEventListener("keyup", (e) => {
+    if (e.key === "Enter") unlockAdmin();
   });
 
-  relockBtn.addEventListener("click", () => {
-    overlay.style.display = "flex";
-    input.focus();
+  cancelLockBtn.addEventListener("click", () => {
+    passwordOverlay.style.display = "none";
+    roleOverlay.style.display = "flex";
   });
 
-  if (toggleSidebarBtn) {
-    toggleSidebarBtn.addEventListener("click", () => {
-      sidebar.classList.toggle("open");
-    });
-  }
+  switchRoleBtn.addEventListener("click", () => {
+    stopStudentAbilityCycle();
+    roleOverlay.style.display = "flex";
+  });
 
-  const closeModalBtn = document.getElementById("closeModalBtn");
-  if (closeModalBtn) {
-    closeModalBtn.addEventListener("click", () => {
-      document.getElementById("activityModal").style.display = "none";
-    });
-  }
+  document.getElementById("toggleSidebarBtn")?.addEventListener("click", () => {
+    document.getElementById("appSidebar").classList.toggle("open");
+  });
 
-  // Bulk Selection Helpers
+  document.getElementById("closeModalBtn")?.addEventListener("click", () => {
+    document.getElementById("activityModal").style.display = "none";
+  });
+
   document.getElementById("selectAllStudentsBtn")?.addEventListener("click", () => {
     document.querySelectorAll(".student-checkbox").forEach(cb => cb.checked = true);
   });
@@ -75,7 +97,30 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Canvas Setup
+// Student Ability Auto-Trigger: 1 Random Turtle every 5 seconds (5-second duration)
+function startStudentAbilityCycle() {
+  stopStudentAbilityCycle();
+  
+  studentAbilityInterval = setInterval(() => {
+    if (turtles.length > 0) {
+      const randomIndex = Math.floor(Math.random() * turtles.length);
+      const selectedTurtle = turtles[randomIndex];
+      
+      if (selectedTurtle) {
+        selectedTurtle.triggerAbility(300);
+      }
+    }
+  }, 5000);
+}
+
+function stopStudentAbilityCycle() {
+  if (studentAbilityInterval) {
+    clearInterval(studentAbilityInterval);
+    studentAbilityInterval = null;
+  }
+}
+
+// Canvas Engine Setup
 const canvas = document.getElementById("aquariumCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -99,7 +144,7 @@ class Particle {
   update() { 
     this.x += this.vx; 
     this.y += this.vy; 
-    this.alpha -= 0.015; // Slightly slower fade for sustained effects
+    this.alpha -= 0.015; 
   }
   draw() {
     ctx.save();
@@ -110,7 +155,6 @@ class Particle {
   }
 }
 
-// Evolutionary & Elemental Turtle Engine
 class Turtle {
   constructor(name, points) {
     this.name = name;
@@ -125,20 +169,16 @@ class Turtle {
     this.flipperSwimTimer = Math.random() * 100;
     this.hueShift = Math.random() * 360;
 
-    // Ability activation timer (60fps * 10 seconds = 600 frames)
     this.abilityTimer = 0;
 
-    // Randomize permanent elemental branch for 1000+ points
     const elements = ['lightning', 'water', 'fire', 'shadow', 'celestial'];
     this.element = elements[Math.floor(Math.random() * elements.length)];
   }
 
-  // Trigger Ability for 10 Full Seconds
-  triggerAbility() {
-    this.abilityTimer = 600; 
+  triggerAbility(frames = 600) {
+    this.abilityTimer = frames;
   }
 
-  // Evolves every 100 points indefinitely
   getStage() {
     return Math.max(1, Math.floor(this.points / 100) + 1);
   }
@@ -151,7 +191,6 @@ class Turtle {
 
   getStageTitle() {
     const stage = this.getStage();
-    
     if (stage === 1) return "Hatchling";
     if (stage === 2) return "Armored Shell";
     if (stage === 3) return "Mystic Cyber";
@@ -170,14 +209,12 @@ class Turtle {
       shadow: "Void Stalker",
       celestial: "Astral Galaxy Titan"
     };
-
     const elementTitle = elementalTitles[this.element] || "Elemental Overlord";
     return `${elementTitle} (Tier ${stage - 10})`;
   }
 
   getElementColors() {
     const stage = this.getStage();
-
     if (stage < 11) {
       const palette = [
         { primary: "#2e7d32", secondary: "#81c784", aura: "rgba(76, 175, 80, 0.4)" },
@@ -215,7 +252,6 @@ class Turtle {
   }
 
   update() {
-    // Dynamic Speed Burst During 10s Ability
     const currentSpeed = this.abilityTimer > 0 ? this.speed * 2.5 : this.speed;
 
     this.angle += (Math.random() - 0.5) * 0.08;
@@ -241,14 +277,12 @@ class Turtle {
       this.angle = Math.atan2(-Math.abs(Math.sin(this.angle)), Math.cos(this.angle));
     }
 
-    // Standard Particle Trail
     const stage = this.getStage();
     if (stage >= 3 && Math.random() < Math.min(0.8, 0.2 + stage * 0.05)) {
       const colors = this.getElementColors();
       particles.push(new Particle(this.x, this.y, colors.particle || colors.secondary));
     }
 
-    // Execute Ability Effects when Active
     if (this.abilityTimer > 0) {
       this.abilityTimer--;
       this.generateAbilityParticles();
@@ -260,131 +294,74 @@ class Turtle {
     const size = this.getSize();
 
     if (stage < 11) {
-      // Stage 1-10 Particle Ability Effects
       switch (stage) {
-        case 1: // Hatchling - Floating Tiny Bubbles Stream
+        case 1:
           particles.push(new Particle(this.x, this.y, "#e0f7fa", (Math.random() - 0.5) * 1.5, -Math.random() * 2 - 0.5, Math.random() * 4 + 1.5));
           break;
-        case 2: // Armored Shell - Metallic Shield Pulse Sparks
-          for (let i = 0; i < 2; i++) {
-            particles.push(new Particle(this.x, this.y, "#4dd0e1", (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, Math.random() * 4 + 1.5));
-          }
+        case 2:
+          for (let i = 0; i < 2; i++) particles.push(new Particle(this.x, this.y, "#4dd0e1", (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, Math.random() * 4 + 1.5));
           break;
-        case 3: // Mystic Cyber - Digital Data Burst
-          for (let i = 0; i < 3; i++) {
-            particles.push(new Particle(this.x, this.y, Math.random() < 0.5 ? "#ba68c8" : "#80deea", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 4 + 2));
-          }
+        case 3:
+          for (let i = 0; i < 3; i++) particles.push(new Particle(this.x, this.y, Math.random() < 0.5 ? "#ba68c8" : "#80deea", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 4 + 2));
           break;
-        case 4: // Cosmic Leviathan - Cosmic Stardust Shower
-          for (let i = 0; i < 3; i++) {
-            particles.push(new Particle(this.x, this.y, "#fff176", (Math.random() - 0.5) * 3.5, (Math.random() - 0.5) * 3.5, Math.random() * 5 + 2));
-          }
+        case 4:
+          for (let i = 0; i < 3; i++) particles.push(new Particle(this.x, this.y, "#fff176", (Math.random() - 0.5) * 3.5, (Math.random() - 0.5) * 3.5, Math.random() * 5 + 2));
           break;
-        case 5: // Ocean Guardian - Hydro Jet Torrent
-          for (let i = 0; i < 4; i++) {
-            particles.push(new Particle(this.x, this.y, "#ff8a80", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 5 + 2));
-          }
+        case 5:
+          for (let i = 0; i < 4; i++) particles.push(new Particle(this.x, this.y, "#ff8a80", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 5 + 2));
           break;
-        case 6: // Abyssal Drake - Deep Indigo Sonar Explosion
-          for (let i = 0; i < 4; i++) {
-            particles.push(new Particle(this.x, this.y, "#7986cb", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 5 + 2));
-          }
+        case 6:
+          for (let i = 0; i < 4; i++) particles.push(new Particle(this.x, this.y, "#7986cb", (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, Math.random() * 5 + 2));
           break;
-        case 7: // Titan Shell - Tremor Rock Eruption
-          for (let i = 0; i < 4; i++) {
-            particles.push(new Particle(this.x, this.y, "#80cbc4", (Math.random() - 0.5) * 3.5, (Math.random() - 0.5) * 3.5, Math.random() * 6 + 2));
-          }
+        case 7:
+          for (let i = 0; i < 4; i++) particles.push(new Particle(this.x, this.y, "#80cbc4", (Math.random() - 0.5) * 3.5, (Math.random() - 0.5) * 3.5, Math.random() * 6 + 2));
           break;
-        case 8: // Prismatic Behemoth - Prism Supernova Flares
-          for (let i = 0; i < 5; i++) {
-            particles.push(new Particle(this.x, this.y, "#ff80ab", (Math.random() - 0.5) * 4.5, (Math.random() - 0.5) * 4.5, Math.random() * 5 + 2));
-          }
+        case 8:
+          for (let i = 0; i < 5; i++) particles.push(new Particle(this.x, this.y, "#ff80ab", (Math.random() - 0.5) * 4.5, (Math.random() - 0.5) * 4.5, Math.random() * 5 + 2));
           break;
-        case 9: // Elder Leviathan - Solar Plasma Storm
-          for (let i = 0; i < 5; i++) {
-            particles.push(new Particle(this.x, this.y, "#ffb74d", (Math.random() - 0.5) * 4, -Math.random() * 3 - 1, Math.random() * 6 + 2));
-          }
+        case 9:
+          for (let i = 0; i < 5; i++) particles.push(new Particle(this.x, this.y, "#ffb74d", (Math.random() - 0.5) * 4, -Math.random() * 3 - 1, Math.random() * 6 + 2));
           break;
-        case 10: // Ascended Warden - Divine Celestial Rays
-          for (let i = 0; i < 5; i++) {
-            particles.push(new Particle(this.x, this.y, "#ffd700", (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, Math.random() * 6 + 2));
-          }
+        case 10:
+          for (let i = 0; i < 5; i++) particles.push(new Particle(this.x, this.y, "#ffd700", (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, Math.random() * 6 + 2));
           break;
       }
       return;
     }
 
-    // Stage 11+ (1000+ Points) Extended Elemental Abilities
     switch (this.element) {
       case 'lightning':
         for (let i = 0; i < 4; i++) {
           const angle = Math.random() * Math.PI * 2;
           const dist = Math.random() * size * 1.8;
-          particles.push(new Particle(
-            this.x + Math.cos(angle) * dist,
-            this.y + Math.sin(angle) * dist,
-            "#ffff00",
-            (Math.random() - 0.5) * 5,
-            (Math.random() - 0.5) * 5,
-            Math.random() * 5 + 2
-          ));
+          particles.push(new Particle(this.x + Math.cos(angle) * dist, this.y + Math.sin(angle) * dist, "#ffff00", (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, Math.random() * 5 + 2));
         }
         break;
-
       case 'water':
         for (let i = 0; i < 5; i++) {
           const angle = Math.random() * Math.PI * 2;
           const speed = Math.random() * 4 + 1;
-          particles.push(new Particle(
-            this.x, this.y,
-            "#00e5ff",
-            Math.cos(angle) * speed,
-            Math.sin(angle) * speed,
-            Math.random() * 6 + 2
-          ));
+          particles.push(new Particle(this.x, this.y, "#00e5ff", Math.cos(angle) * speed, Math.sin(angle) * speed, Math.random() * 6 + 2));
         }
         break;
-
       case 'fire':
         for (let i = 0; i < 6; i++) {
-          particles.push(new Particle(
-            this.x + (Math.random() - 0.5) * size,
-            this.y + (Math.random() - 0.5) * size,
-            Math.random() < 0.5 ? "#ff3d00" : "#ffab00",
-            (Math.random() - 0.5) * 3,
-            -Math.random() * 4 - 1,
-            Math.random() * 7 + 2
-          ));
+          particles.push(new Particle(this.x + (Math.random() - 0.5) * size, this.y + (Math.random() - 0.5) * size, Math.random() < 0.5 ? "#ff3d00" : "#ffab00", (Math.random() - 0.5) * 3, -Math.random() * 4 - 1, Math.random() * 7 + 2));
         }
         break;
-
       case 'shadow':
         for (let i = 0; i < 5; i++) {
           const angle = Math.random() * Math.PI * 2;
           const dist = size * 1.4;
-          particles.push(new Particle(
-            this.x + Math.cos(angle) * dist,
-            this.y + Math.sin(angle) * dist,
-            "#ea80fc",
-            -Math.cos(angle) * 2,
-            -Math.sin(angle) * 2,
-            Math.random() * 5 + 1.5
-          ));
+          particles.push(new Particle(this.x + Math.cos(angle) * dist, this.y + Math.sin(angle) * dist, "#ea80fc", -Math.cos(angle) * 2, -Math.sin(angle) * 2, Math.random() * 5 + 1.5));
         }
         break;
-
       case 'celestial':
       default:
         for (let i = 0; i < 5; i++) {
           const angle = Math.random() * Math.PI * 2;
           const speed = Math.random() * 3 + 1;
-          particles.push(new Particle(
-            this.x, this.y,
-            `hsl(${Math.random() * 360}, 100%, 80%)`,
-            Math.cos(angle) * speed,
-            Math.sin(angle) * speed,
-            Math.random() * 5 + 2
-          ));
+          particles.push(new Particle(this.x, this.y, `hsl(${Math.random() * 360}, 100%, 80%)`, Math.cos(angle) * speed, Math.sin(angle) * speed, Math.random() * 5 + 2));
         }
         break;
     }
@@ -399,20 +376,17 @@ class Turtle {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Render Ability Canvas FX Ring / Shield
     if (this.abilityTimer > 0) {
       this.drawAbilityFX(size, style);
     }
 
     ctx.rotate(this.angle + Math.PI / 2);
 
-    // Dynamic Glow Aura (Amplified during 10s ability)
     if (stage >= 2) {
       ctx.shadowBlur = this.abilityTimer > 0 ? 60 : Math.min(40, 10 + stage * 3);
       ctx.shadowColor = style.aura;
     }
 
-    // Elemental Crown / Halo for 1000+ points
     if (stage >= 11) {
       ctx.save();
       ctx.strokeStyle = style.secondary;
@@ -423,7 +397,7 @@ class Turtle {
       ctx.restore();
     }
 
-    // Left Flipper
+    // Flippers & Head
     ctx.fillStyle = style.primary;
     ctx.save();
     ctx.translate(-size * 0.55, -size * 0.25);
@@ -431,37 +405,32 @@ class Turtle {
     ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 
-    // Right Flipper
     ctx.save();
     ctx.translate(size * 0.55, -size * 0.25);
     ctx.rotate(0.5 - flipperAngle);
     ctx.beginPath(); ctx.ellipse(0, 0, size * 0.45, size * 0.18, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 
-    // Head
-    ctx.fillStyle = style.primary;
     ctx.beginPath(); ctx.arc(0, -size * 0.75, size * 0.3, 0, Math.PI * 2); ctx.fill();
 
-    // Eyes
+    // Eyes & Pupils
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.arc(-size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
     ctx.arc(size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
     ctx.fill();
 
-    // Pupils
     ctx.fillStyle = stage >= 11 ? style.secondary : "#000000";
     ctx.beginPath();
     ctx.arc(-size * 0.12, -size * 0.87, size * 0.03, 0, Math.PI * 2);
     ctx.arc(size * 0.12, -size * 0.87, size * 0.03, 0, Math.PI * 2);
     ctx.fill();
 
-    // Shell Body
+    // Shell
     ctx.fillStyle = style.primary;
     ctx.beginPath(); ctx.ellipse(0, 0, size * 0.65, size * 0.8, 0, 0, Math.PI * 2); ctx.fill();
     ctx.lineWidth = 2.5; ctx.strokeStyle = style.secondary; ctx.stroke();
 
-    // Hex Pattern
     ctx.strokeStyle = style.secondary;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -476,7 +445,6 @@ class Turtle {
     ctx.closePath();
     ctx.stroke();
 
-    // Shell Crest Lines (Stage 4+)
     if (stage >= 4) {
       ctx.beginPath();
       ctx.moveTo(0, -hexRadius); ctx.lineTo(0, -size * 0.65);
@@ -501,13 +469,11 @@ class Turtle {
     ctx.restore();
   }
 
-  // Draw Specific Ability FX per Stage / Element
   drawAbilityFX(size, style) {
     const stage = this.getStage();
     ctx.save();
 
     if (stage < 11) {
-      // Continuous Pulsing Ring for 10 seconds
       const pulseRadius = size * 1.3 + Math.sin(this.abilityTimer * 0.15) * (size * 0.3);
       ctx.strokeStyle = style.secondary;
       ctx.lineWidth = 3 + Math.floor(stage / 2);
@@ -515,13 +481,11 @@ class Turtle {
       ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
       ctx.stroke();
     } else {
-      // Stage 11+ Elemental Visual Effects
       if (this.element === 'lightning') {
         ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 3;
         for (let i = 0; i < 4; i++) {
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
+          ctx.beginPath(); ctx.moveTo(0, 0);
           let lx = 0, ly = 0;
           for (let j = 0; j < 5; j++) {
             lx += (Math.random() - 0.5) * (size * 1.2);
@@ -549,12 +513,22 @@ class Turtle {
   }
 }
 
-// Backend Data Sync
+// Backend Sync & Hydration
 async function fetchSheetData() {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
     classroomData = {
-      "Mr. Smith": { "Science Section A": [{ name: "Alex", totalPoints: 1050, activities: [{ activity: "Quiz 1", points: 1050, date: new Date().toLocaleDateString() }] }] },
-      "Ms. Davis": { "Math Grade 5": [{ name: "Emma", totalPoints: 350, activities: [{ activity: "Homework 1", points: 350, date: new Date().toLocaleDateString() }] }] }
+      "Mr. Smith": { 
+        "Science Section A": [
+          { name: "Alex", totalPoints: 1050, activities: [{ activity: "Quiz 1", points: 1050, date: new Date().toLocaleDateString() }] }
+        ],
+        "Science Section A_ARCHIVE": []
+      },
+      "Ms. Davis": { 
+        "Math Grade 5": [
+          { name: "Emma", totalPoints: 350, activities: [{ activity: "Homework 1", points: 350, date: new Date().toLocaleDateString() }] }
+        ],
+        "Math Grade 5_ARCHIVE": []
+      }
     };
     updateTeacherDropdown();
     return;
@@ -564,13 +538,13 @@ async function fetchSheetData() {
     const res = await fetch(APPS_SCRIPT_URL);
     classroomData = await res.json();
     if (!classroomData || Object.keys(classroomData).length === 0) {
-      classroomData = { "Default Teacher": { "Class 1": [] } };
+      classroomData = { "Default Teacher": { "Class 1": [], "Class 1_ARCHIVE": [] } };
     }
     updateTeacherDropdown();
   } catch (err) {
-    console.warn("Using offline fallback data:", err);
+    console.warn("Using fallback local data:", err);
     if (Object.keys(classroomData).length === 0) {
-      classroomData = { "Default Teacher": { "Class 1": [] } };
+      classroomData = { "Default Teacher": { "Class 1": [], "Class 1_ARCHIVE": [] } };
     }
     updateTeacherDropdown();
   }
@@ -599,7 +573,7 @@ function updateClassDropdown() {
   dropdown.innerHTML = "";
 
   const teacherClasses = classroomData[activeTeacher] || {};
-  const classNames = Object.keys(teacherClasses);
+  const classNames = Object.keys(teacherClasses).filter(c => !c.endsWith("_ARCHIVE"));
 
   if (classNames.length === 0) {
     dropdown.innerHTML = `<option value="">No classes created yet</option>`;
@@ -625,12 +599,15 @@ function loadClassroom(className) {
   document.getElementById("activeTeacherSubtitle").textContent = `Teacher: ${activeTeacher || "None"}`;
 
   const students = (classroomData[activeTeacher] && classroomData[activeTeacher][className]) ? classroomData[activeTeacher][className] : [];
+  const archivedStudents = (classroomData[activeTeacher] && classroomData[activeTeacher][`${className}_ARCHIVE`]) ? classroomData[activeTeacher][`${className}_ARCHIVE`] : [];
+
   turtles = students.map(s => new Turtle(s.name, s.totalPoints));
 
   populateStudentCheckboxes(students);
   populateActivityHistory(students);
   renderLeaderboard(students);
   renderStudentRoster(students);
+  renderArchiveList(archivedStudents);
 }
 
 function populateStudentCheckboxes(students) {
@@ -722,14 +699,24 @@ function renderStudentRoster(students) {
   if (!list) return;
   list.innerHTML = "";
 
+  if (students.length === 0) {
+    list.innerHTML = `<div class="empty-msg">No active students</div>`;
+    return;
+  }
+
   students.forEach(student => {
     const card = document.createElement("div");
     card.className = "student-card";
     card.innerHTML = `
       <span><b>${student.name}</b> (${student.totalPoints} pts)</span>
-      <button class="btn primary" style="padding: 4px 8px; font-size: 11px;" onclick="openStudentReport('${student.name}')">
-        <i data-lucide="file-text"></i> Report
-      </button>
+      <div class="card-actions">
+        <button class="btn primary small" onclick="openStudentReport('${student.name}')">
+          <i data-lucide="file-text"></i> Report
+        </button>
+        <button class="btn danger small" onclick="archiveStudent('${student.name}')">
+          <i data-lucide="trash-2"></i> Delete
+        </button>
+      </div>
     `;
     list.appendChild(card);
   });
@@ -737,7 +724,106 @@ function renderStudentRoster(students) {
   initIcons();
 }
 
-// Point Awarding Action with Ability Trigger for ALL Levels
+function renderArchiveList(archivedStudents) {
+  const list = document.getElementById("archiveList");
+  if (!list) return;
+  list.innerHTML = "";
+
+  if (archivedStudents.length === 0) {
+    list.innerHTML = `<div class="empty-msg">No archived students</div>`;
+    return;
+  }
+
+  archivedStudents.forEach(student => {
+    const card = document.createElement("div");
+    card.className = "student-card";
+    card.style.opacity = "0.8";
+    card.innerHTML = `
+      <span><b>${student.name}</b> (${student.totalPoints} pts)</span>
+      <button class="btn success small" onclick="restoreStudent('${student.name}')">
+        <i data-lucide="rotate-ccw"></i> Restore
+      </button>
+    `;
+    list.appendChild(card);
+  });
+
+  initIcons();
+}
+
+// Delete (Archive) Student Function
+window.archiveStudent = async function(studentName) {
+  if (!activeTeacher || !activeClass) return;
+
+  const activeRoster = classroomData[activeTeacher][activeClass];
+  const archiveKey = `${activeClass}_ARCHIVE`;
+  if (!classroomData[activeTeacher][archiveKey]) {
+    classroomData[activeTeacher][archiveKey] = [];
+  }
+  const archiveRoster = classroomData[activeTeacher][archiveKey];
+
+  const studentIndex = activeRoster.findIndex(s => s.name === studentName);
+  if (studentIndex > -1) {
+    const [archivedStudent] = activeRoster.splice(studentIndex, 1);
+    archiveRoster.push(archivedStudent);
+  }
+
+  loadClassroom(activeClass);
+
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "archiveStudent",
+          teacherName: activeTeacher,
+          className: activeClass,
+          studentName: studentName
+        })
+      });
+    } catch (e) {
+      console.error("Archive sync failed:", e);
+    }
+  }
+};
+
+// Restore Student Function
+window.restoreStudent = async function(studentName) {
+  if (!activeTeacher || !activeClass) return;
+
+  const activeRoster = classroomData[activeTeacher][activeClass];
+  const archiveKey = `${activeClass}_ARCHIVE`;
+  const archiveRoster = classroomData[activeTeacher][archiveKey] || [];
+
+  const studentIndex = archiveRoster.findIndex(s => s.name === studentName);
+  if (studentIndex > -1) {
+    const [restoredStudent] = archiveRoster.splice(studentIndex, 1);
+    activeRoster.push(restoredStudent);
+  }
+
+  loadClassroom(activeClass);
+
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "restoreStudent",
+          teacherName: activeTeacher,
+          className: activeClass,
+          studentName: studentName
+        })
+      });
+    } catch (e) {
+      console.error("Restore sync failed:", e);
+    }
+  }
+};
+
+// Award Points Event (Teacher Mode)
 document.getElementById("submitActivityBtn")?.addEventListener("click", async () => {
   const checkedBoxes = document.querySelectorAll(".student-checkbox:checked");
   const selectedStudents = Array.from(checkedBoxes).map(cb => cb.value);
@@ -766,7 +852,7 @@ document.getElementById("submitActivityBtn")?.addEventListener("click", async ()
     const turtle = turtles.find(t => t.name === studentName);
     if (turtle) {
       turtle.points += points;
-      turtle.triggerAbility(); // Triggers 10-second ability animation for any level
+      turtle.triggerAbility(600);
     }
   });
 
@@ -795,12 +881,11 @@ document.getElementById("submitActivityBtn")?.addEventListener("click", async ()
         })
       });
     } catch (e) {
-      console.error("Backend sync failed:", e);
+      console.error("Sync error:", e);
     }
   }
 });
 
-// Modal Display Handler
 window.openStudentReport = function(studentName) {
   selectedStudentForReport = studentName;
   const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
@@ -824,7 +909,6 @@ window.openStudentReport = function(studentName) {
   initIcons();
 };
 
-// Individual Student PDF Generator
 document.getElementById("printSingleReportBtn")?.addEventListener("click", () => {
   const student = classroomData[activeTeacher][activeClass].find(s => s.name === selectedStudentForReport);
   if (!student) return;
@@ -840,7 +924,7 @@ document.getElementById("printSingleReportBtn")?.addEventListener("click", () =>
 
   printArea.innerHTML = `
     <div style="font-family: Arial, sans-serif; color: #000; padding: 10px;">
-      <h1 style="font-size: 24px; margin-bottom: 6px;">Student Activity & Points Report</h1>
+      <h1 style="font-size: 24px; margin-bottom: 6px;">Student Activity Report</h1>
       <h3 style="font-size: 14px; color: #444; margin-bottom: 20px;">
         <b>Teacher:</b> ${activeTeacher} &nbsp;|&nbsp; 
         <b>Class:</b> ${activeClass} &nbsp;|&nbsp; 
@@ -851,8 +935,8 @@ document.getElementById("printSingleReportBtn")?.addEventListener("click", () =>
         <thead>
           <tr style="background: #f0f0f0;">
             <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Date</th>
-            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Activity Title</th>
-            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Points Awarded</th>
+            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Activity</th>
+            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Points</th>
           </tr>
         </thead>
         <tbody>${rowsHtml}</tbody>
@@ -864,7 +948,6 @@ document.getElementById("printSingleReportBtn")?.addEventListener("click", () =>
   printArea.innerHTML = "";
 });
 
-// Classroom PDF Summary Generator
 document.getElementById("printClassReportBtn")?.addEventListener("click", () => {
   const students = (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) ? classroomData[activeTeacher][activeClass] : [];
   const printArea = document.getElementById("printableReport");
@@ -902,15 +985,12 @@ document.getElementById("printClassReportBtn")?.addEventListener("click", () => 
   printArea.innerHTML = "";
 });
 
-// App Controls
 document.getElementById("createTeacherBtn")?.addEventListener("click", () => {
   const input = document.getElementById("newTeacherInput");
   const teacherName = input.value.trim();
   if (!teacherName) return;
 
-  if (!classroomData[teacherName]) {
-    classroomData[teacherName] = {};
-  }
+  if (!classroomData[teacherName]) classroomData[teacherName] = {};
   activeTeacher = teacherName;
   input.value = "";
   updateTeacherDropdown();
@@ -924,6 +1004,7 @@ document.getElementById("createClassBtn")?.addEventListener("click", async () =>
   activeClass = className;
   if (!classroomData[activeTeacher]) classroomData[activeTeacher] = {};
   classroomData[activeTeacher][className] = [];
+  classroomData[activeTeacher][`${className}_ARCHIVE`] = [];
   input.value = "";
   updateClassDropdown();
 
@@ -936,7 +1017,7 @@ document.getElementById("createClassBtn")?.addEventListener("click", async () =>
         body: JSON.stringify({ action: "createClassroom", teacherName: activeTeacher, className: className })
       });
     } catch (e) {
-      console.error("Failed to post class to Apps Script:", e);
+      console.error(e);
     }
   }
 });
