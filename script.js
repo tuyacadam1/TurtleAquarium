@@ -31,14 +31,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectTeacherBtn = document.getElementById("selectTeacherRoleBtn");
   const teacherAdminControls = document.getElementById("teacherAdminControls");
   const rosterPanel = document.getElementById("rosterPanel");
-  const archivePanel = document.getElementById("archivePanel");
 
   selectStudentBtn.addEventListener("click", () => {
     userRole = "student";
     roleOverlay.style.display = "none";
     teacherAdminControls.style.display = "none";
     rosterPanel.style.display = "none";
-    archivePanel.style.display = "none";
     startStudentAbilityCycle();
   });
 
@@ -56,7 +54,6 @@ document.addEventListener("DOMContentLoaded", () => {
       passcodeInput.value = "";
       teacherAdminControls.style.display = "flex";
       rosterPanel.style.display = "flex";
-      archivePanel.style.display = "flex";
       stopStudentAbilityCycle();
     } else {
       lockErrorMessage.style.display = "block";
@@ -520,14 +517,12 @@ async function fetchSheetData() {
       "Mr. Smith": { 
         "Science Section A": [
           { name: "Alex", totalPoints: 1050, activities: [{ activity: "Quiz 1", points: 1050, date: new Date().toLocaleDateString() }] }
-        ],
-        "Science Section A_ARCHIVE": []
+        ]
       },
       "Ms. Davis": { 
         "Math Grade 5": [
           { name: "Emma", totalPoints: 350, activities: [{ activity: "Homework 1", points: 350, date: new Date().toLocaleDateString() }] }
-        ],
-        "Math Grade 5_ARCHIVE": []
+        ]
       }
     };
     updateTeacherDropdown();
@@ -538,13 +533,13 @@ async function fetchSheetData() {
     const res = await fetch(APPS_SCRIPT_URL);
     classroomData = await res.json();
     if (!classroomData || Object.keys(classroomData).length === 0) {
-      classroomData = { "Default Teacher": { "Class 1": [], "Class 1_ARCHIVE": [] } };
+      classroomData = { "Default Teacher": { "Class 1": [] } };
     }
     updateTeacherDropdown();
   } catch (err) {
     console.warn("Using fallback local data:", err);
     if (Object.keys(classroomData).length === 0) {
-      classroomData = { "Default Teacher": { "Class 1": [], "Class 1_ARCHIVE": [] } };
+      classroomData = { "Default Teacher": { "Class 1": [] } };
     }
     updateTeacherDropdown();
   }
@@ -573,7 +568,7 @@ function updateClassDropdown() {
   dropdown.innerHTML = "";
 
   const teacherClasses = classroomData[activeTeacher] || {};
-  const classNames = Object.keys(teacherClasses).filter(c => !c.endsWith("_ARCHIVE"));
+  const classNames = Object.keys(teacherClasses);
 
   if (classNames.length === 0) {
     dropdown.innerHTML = `<option value="">No classes created yet</option>`;
@@ -599,7 +594,6 @@ function loadClassroom(className) {
   document.getElementById("activeTeacherSubtitle").textContent = `Teacher: ${activeTeacher || "None"}`;
 
   const students = (classroomData[activeTeacher] && classroomData[activeTeacher][className]) ? classroomData[activeTeacher][className] : [];
-  const archivedStudents = (classroomData[activeTeacher] && classroomData[activeTeacher][`${className}_ARCHIVE`]) ? classroomData[activeTeacher][`${className}_ARCHIVE`] : [];
 
   turtles = students.map(s => new Turtle(s.name, s.totalPoints));
 
@@ -607,7 +601,6 @@ function loadClassroom(className) {
   populateActivityHistory(students);
   renderLeaderboard(students);
   renderStudentRoster(students);
-  renderArchiveList(archivedStudents);
 }
 
 function populateStudentCheckboxes(students) {
@@ -713,7 +706,7 @@ function renderStudentRoster(students) {
         <button class="btn primary small" onclick="openStudentReport('${student.name}')">
           <i data-lucide="file-text"></i> Report
         </button>
-        <button class="btn danger small" onclick="archiveStudent('${student.name}')">
+        <button class="btn danger small" onclick="deleteStudentPermanently('${student.name}')">
           <i data-lucide="trash-2"></i> Delete
         </button>
       </div>
@@ -724,47 +717,18 @@ function renderStudentRoster(students) {
   initIcons();
 }
 
-function renderArchiveList(archivedStudents) {
-  const list = document.getElementById("archiveList");
-  if (!list) return;
-  list.innerHTML = "";
-
-  if (archivedStudents.length === 0) {
-    list.innerHTML = `<div class="empty-msg">No archived students</div>`;
-    return;
-  }
-
-  archivedStudents.forEach(student => {
-    const card = document.createElement("div");
-    card.className = "student-card";
-    card.style.opacity = "0.8";
-    card.innerHTML = `
-      <span><b>${student.name}</b> (${student.totalPoints} pts)</span>
-      <button class="btn success small" onclick="restoreStudent('${student.name}')">
-        <i data-lucide="rotate-ccw"></i> Restore
-      </button>
-    `;
-    list.appendChild(card);
-  });
-
-  initIcons();
-}
-
-// Delete (Archive) Student Function
-window.archiveStudent = async function(studentName) {
+// Permanent Database Delete Function
+window.deleteStudentPermanently = async function(studentName) {
   if (!activeTeacher || !activeClass) return;
 
-  const activeRoster = classroomData[activeTeacher][activeClass];
-  const archiveKey = `${activeClass}_ARCHIVE`;
-  if (!classroomData[activeTeacher][archiveKey]) {
-    classroomData[activeTeacher][archiveKey] = [];
-  }
-  const archiveRoster = classroomData[activeTeacher][archiveKey];
+  const confirmDelete = confirm(`Are you sure you want to PERMANENTLY delete ${studentName} from the database? This action cannot be undone.`);
+  if (!confirmDelete) return;
 
+  const activeRoster = classroomData[activeTeacher][activeClass];
   const studentIndex = activeRoster.findIndex(s => s.name === studentName);
+
   if (studentIndex > -1) {
-    const [archivedStudent] = activeRoster.splice(studentIndex, 1);
-    archiveRoster.push(archivedStudent);
+    activeRoster.splice(studentIndex, 1);
   }
 
   loadClassroom(activeClass);
@@ -776,49 +740,14 @@ window.archiveStudent = async function(studentName) {
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "archiveStudent",
+          action: "deleteStudentPermanently",
           teacherName: activeTeacher,
           className: activeClass,
           studentName: studentName
         })
       });
     } catch (e) {
-      console.error("Archive sync failed:", e);
-    }
-  }
-};
-
-// Restore Student Function
-window.restoreStudent = async function(studentName) {
-  if (!activeTeacher || !activeClass) return;
-
-  const activeRoster = classroomData[activeTeacher][activeClass];
-  const archiveKey = `${activeClass}_ARCHIVE`;
-  const archiveRoster = classroomData[activeTeacher][archiveKey] || [];
-
-  const studentIndex = archiveRoster.findIndex(s => s.name === studentName);
-  if (studentIndex > -1) {
-    const [restoredStudent] = archiveRoster.splice(studentIndex, 1);
-    activeRoster.push(restoredStudent);
-  }
-
-  loadClassroom(activeClass);
-
-  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
-    try {
-      await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "restoreStudent",
-          teacherName: activeTeacher,
-          className: activeClass,
-          studentName: studentName
-        })
-      });
-    } catch (e) {
-      console.error("Restore sync failed:", e);
+      console.error("Permanent deletion failed:", e);
     }
   }
 };
@@ -1004,7 +933,6 @@ document.getElementById("createClassBtn")?.addEventListener("click", async () =>
   activeClass = className;
   if (!classroomData[activeTeacher]) classroomData[activeTeacher] = {};
   classroomData[activeTeacher][className] = [];
-  classroomData[activeTeacher][`${className}_ARCHIVE`] = [];
   input.value = "";
   updateClassDropdown();
 
