@@ -15,6 +15,94 @@ let selectedStudentForReport = null;
 let userRole = "student"; 
 let studentAbilityInterval = null;
 
+// Lockout Constants
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_KEY = "teacher_lockout_data";
+
+// Lockout Helper Functions
+function getLockoutData() {
+  try {
+    const raw = localStorage.getItem(LOCKOUT_KEY);
+    return raw ? JSON.parse(raw) : { attempts: 0, lockedUntil: null };
+  } catch (e) {
+    return { attempts: 0, lockedUntil: null };
+  }
+}
+
+function saveLockoutData(data) {
+  try {
+    localStorage.setItem(LOCKOUT_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error("Could not save lockout status", e);
+  }
+}
+
+function checkLockoutStatus() {
+  const data = getLockoutData();
+  const passcodeInput = document.getElementById("passcodeInput");
+  const unlockBtn = document.getElementById("unlockBtn");
+  const attemptsMsg = document.getElementById("lockAttemptsMessage");
+  const lockErrorMessage = document.getElementById("lockErrorMessage");
+
+  if (!attemptsMsg) return false;
+
+  const now = new Date().getTime();
+
+  if (data.lockedUntil && now < data.lockedUntil) {
+    const hoursLeft = Math.ceil((data.lockedUntil - now) / (1000 * 60 * 60));
+    if (passcodeInput) passcodeInput.disabled = true;
+    if (unlockBtn) unlockBtn.disabled = true;
+    if (lockErrorMessage) lockErrorMessage.style.display = "none";
+
+    attemptsMsg.style.color = "#ff5252";
+    attemptsMsg.textContent = `🔒 Too many failed attempts! Try again tomorrow (in ~${hoursLeft} hours).`;
+    return true; // Locked
+  }
+
+  // Lock expired (Next day reached) -> Reset
+  if (data.lockedUntil && now >= data.lockedUntil) {
+    saveLockoutData({ attempts: 0, lockedUntil: null });
+    if (passcodeInput) passcodeInput.disabled = false;
+    if (unlockBtn) unlockBtn.disabled = false;
+    attemptsMsg.textContent = "";
+    return false;
+  }
+
+  // Remaining Attempts Counter
+  const remaining = MAX_ATTEMPTS - (data.attempts || 0);
+  if (remaining < MAX_ATTEMPTS && remaining > 0) {
+    attemptsMsg.style.color = "var(--accent-gold)";
+    attemptsMsg.textContent = `Warning: ${remaining} attempt(s) remaining today.`;
+  } else {
+    attemptsMsg.textContent = "";
+  }
+
+  if (passcodeInput) passcodeInput.disabled = false;
+  if (unlockBtn) unlockBtn.disabled = false;
+
+  return false;
+}
+
+function registerFailedAttempt() {
+  const data = getLockoutData();
+  data.attempts = (data.attempts || 0) + 1;
+
+  if (data.attempts >= MAX_ATTEMPTS) {
+    // Set lock until 12:00 AM (Midnight next day)
+    const tomorrow = new Date();
+    tomorrow.setHours(24, 0, 0, 0);
+    data.lockedUntil = tomorrow.getTime();
+  }
+
+  saveLockoutData(data);
+  checkLockoutStatus();
+}
+
+function resetLockoutOnSuccess() {
+  saveLockoutData({ attempts: 0, lockedUntil: null });
+  checkLockoutStatus();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initIcons();
 
@@ -56,13 +144,19 @@ document.addEventListener("DOMContentLoaded", () => {
         passwordOverlay.style.display = "flex";
         passwordOverlay.classList.remove("hidden");
       }
-      if (passcodeInput) passcodeInput.focus();
+      checkLockoutStatus();
+      if (passcodeInput && !passcodeInput.disabled) passcodeInput.focus();
     });
   }
 
   // Secure Server-Side Passcode Verification
   async function unlockAdmin() {
     if (!passcodeInput) return;
+
+    if (checkLockoutStatus()) {
+      return; // Stop if locked out
+    }
+
     const enteredPasscode = passcodeInput.value.trim();
 
     if (!enteredPasscode) {
@@ -93,6 +187,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (result.authorized) {
         userRole = "teacher";
+        resetLockoutOnSuccess();
+
         if (passwordOverlay) {
           passwordOverlay.style.display = "none";
           passwordOverlay.classList.add("hidden");
@@ -103,12 +199,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (rosterPanel) rosterPanel.style.display = "flex";
         stopStudentAbilityCycle();
       } else {
+        registerFailedAttempt();
         if (lockErrorMessage) {
-          lockErrorMessage.textContent = "Incorrect passcode. Access denied!";
+          lockErrorMessage.textContent = "Incorrect passcode!";
           lockErrorMessage.style.display = "block";
         }
         passcodeInput.value = "";
-        passcodeInput.focus();
+        if (!passcodeInput.disabled) passcodeInput.focus();
       }
     } catch (error) {
       console.error("Authentication error:", error);
@@ -117,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
         lockErrorMessage.style.display = "block";
       }
     } finally {
-      if (unlockBtn) {
+      if (unlockBtn && !checkLockoutStatus()) {
         unlockBtn.disabled = false;
         unlockBtn.innerHTML = `<i data-lucide="key-round"></i> Unlock`;
         initIcons();
