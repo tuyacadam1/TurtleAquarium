@@ -1355,41 +1355,73 @@ document.getElementById("printSingleReportBtn")?.addEventListener("click", () =>
   printArea.innerHTML = "";
 });
 
-// DYNAMIC CLASS RECORD PRINT REPORT (INDIVIDUAL ACTIVITY SCORES)
+// DYNAMIC CLASS RECORD PRINT REPORT WITH CATEGORY HEADER GROUPS
 document.getElementById("printClassReportBtn")?.addEventListener("click", () => {
   const students = (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) ? classroomData[activeTeacher][activeClass] : [];
   const printArea = document.getElementById("printableReport");
 
-  // 1. Collect all unique activities assigned across the class
-  const activityList = [];
+  // 1. Collect all unique activities assigned across the class along with their category
+  const activityMap = new Map(); // activityName -> categoryName
+
   students.forEach(s => {
     if (s.activities) {
       s.activities.forEach(act => {
         if (act.activity && act.activity !== "Initial Registration" && act.activity !== "Enrolled") {
-          if (!activityList.includes(act.activity)) {
-            activityList.push(act.activity);
+          if (!activityMap.has(act.activity)) {
+            const cat = (act.category && act.category.trim()) ? act.category.trim() : "General";
+            activityMap.set(act.activity, cat);
           }
         }
       });
     }
   });
 
-  // Fallback header column if no activities exist yet
-  const headersHtml = activityList.length > 0 
-    ? activityList.map(act => `<th style="border: 1px solid #999; padding: 8px; text-align: center; font-size: 12px; background: #e0f7fa;">${act}</th>`).join("")
-    : `<th style="border: 1px solid #999; padding: 8px; text-align: center; font-size: 12px; background: #e0f7fa;">No Activities</th>`;
+  // 2. Group activity names by category
+  const groupedCategories = {};
+  activityMap.forEach((category, activityName) => {
+    if (!groupedCategories[category]) {
+      groupedCategories[category] = [];
+    }
+    groupedCategories[category].push(activityName);
+  });
 
-  // 2. Generate table rows with individual activity scores
+  const categories = Object.keys(groupedCategories);
+  const totalActivitiesCount = Array.from(activityMap.keys()).length;
+
+  // 3. Build top header row (Categories with colspan) & sub header row (Individual Activity Names)
+  let topHeaderHtml = `<th rowspan="2" style="border: 1px solid #999; padding: 8px; text-align: left; font-size: 13px; background: #e0f7fa;">Student Name</th>`;
+  let subHeaderHtml = "";
+
+  if (categories.length > 0) {
+    categories.forEach(cat => {
+      const actList = groupedCategories[cat];
+      topHeaderHtml += `<th colspan="${actList.length}" style="border: 1px solid #999; padding: 6px; text-align: center; font-size: 13px; background: #b2ebf2;">${cat}</th>`;
+      
+      actList.forEach(actName => {
+        subHeaderHtml += `<th style="border: 1px solid #999; padding: 6px; text-align: center; font-size: 12px; background: #e0f7fa;">${actName}</th>`;
+      });
+    });
+  } else {
+    topHeaderHtml += `<th rowspan="2" style="border: 1px solid #999; padding: 8px; text-align: center; font-size: 13px; background: #e0f7fa;">No Activities</th>`;
+  }
+
+  topHeaderHtml += `<th rowspan="2" style="border: 1px solid #999; padding: 8px; text-align: center; font-size: 13px; background: #80deea;">Total Points</th>`;
+
+  // 4. Generate table rows for each student
   let rowsHtml = students.map(s => {
     let activityCells = "";
 
-    if (activityList.length > 0) {
-      activityCells = activityList.map(actName => {
-        const totalForAct = (s.activities || [])
-          .filter(a => a.activity === actName)
-          .reduce((sum, a) => sum + (Number(a.points) || 0), 0);
-        return `<td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center;">${totalForAct || 0}</td>`;
-      }).join("");
+    if (categories.length > 0) {
+      categories.forEach(cat => {
+        const actList = groupedCategories[cat];
+        actList.forEach(actName => {
+          const totalForAct = (s.activities || [])
+            .filter(a => a.activity === actName)
+            .reduce((sum, a) => sum + (Number(a.points) || 0), 0);
+          
+          activityCells += `<td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center;">${totalForAct || 0}</td>`;
+        });
+      });
     } else {
       activityCells = `<td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center;">0</td>`;
     }
@@ -1403,6 +1435,7 @@ document.getElementById("printClassReportBtn")?.addEventListener("click", () => 
     `;
   }).join("");
 
+  // 5. Construct full document content for print preview
   printArea.innerHTML = `
     <div style="font-family: Arial, sans-serif; color: #000; padding: 15px;">
       <h1 style="font-size: 24px; margin-bottom: 4px;">Classroom Record Summary Report</h1>
@@ -1414,14 +1447,13 @@ document.getElementById("printClassReportBtn")?.addEventListener("click", () => 
 
       <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
         <thead>
-          <tr style="background: #b2ebf2;">
-            <th style="border: 1px solid #999; padding: 10px; text-align: left; font-size: 13px;">Student Name</th>
-            ${headersHtml}
-            <th style="border: 1px solid #999; padding: 10px; text-align: center; font-size: 13px; background: #80deea;">Total Points</th>
+          <tr>
+            ${topHeaderHtml}
           </tr>
+          ${subHeaderHtml ? `<tr>${subHeaderHtml}</tr>` : ''}
         </thead>
         <tbody>
-          ${rowsHtml || `<tr><td colspan="${activityList.length + 2}" style="text-align:center; padding: 12px;">No student records found.</td></tr>`}
+          ${rowsHtml || `<tr><td colspan="${totalActivitiesCount + 2}" style="text-align:center; padding: 12px;">No student records found.</td></tr>`}
         </tbody>
       </table>
     </div>
