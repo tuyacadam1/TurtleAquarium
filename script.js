@@ -19,7 +19,6 @@ let studentAbilityInterval = null;
 const MAX_ATTEMPTS = 3;
 const LOCKOUT_KEY = "teacher_lockout_data";
 
-// Lockout Helper Functions
 function getLockoutData() {
   try {
     const raw = localStorage.getItem(LOCKOUT_KEY);
@@ -48,32 +47,41 @@ function checkLockoutStatus() {
 
   const now = new Date().getTime();
 
+  // 1. LOCKED OUT STATE
   if (data.lockedUntil && now < data.lockedUntil) {
     const hoursLeft = Math.ceil((data.lockedUntil - now) / (1000 * 60 * 60));
     if (passcodeInput) passcodeInput.disabled = true;
     if (unlockBtn) unlockBtn.disabled = true;
     if (lockErrorMessage) lockErrorMessage.style.display = "none";
 
+    attemptsMsg.style.display = "block";
     attemptsMsg.style.color = "#ff5252";
-    attemptsMsg.textContent = `🔒 Too many failed attempts! Try again tomorrow (in ~${hoursLeft} hours).`;
-    return true; // Locked
+    attemptsMsg.style.background = "rgba(211, 47, 47, 0.15)";
+    attemptsMsg.style.border = "1px solid #d32f2f";
+    attemptsMsg.textContent = `🔒 Locked! 3 failed attempts reached. Try again tomorrow (~${hoursLeft}h left).`;
+    return true;
   }
 
-  // Lock expired (Next day reached) -> Reset
+  // 2. LOCK EXPIRED
   if (data.lockedUntil && now >= data.lockedUntil) {
     saveLockoutData({ attempts: 0, lockedUntil: null });
     if (passcodeInput) passcodeInput.disabled = false;
     if (unlockBtn) unlockBtn.disabled = false;
+    attemptsMsg.style.display = "none";
     attemptsMsg.textContent = "";
     return false;
   }
 
-  // Remaining Attempts Counter
+  // 3. WARNING STATE
   const remaining = MAX_ATTEMPTS - (data.attempts || 0);
   if (remaining < MAX_ATTEMPTS && remaining > 0) {
-    attemptsMsg.style.color = "var(--accent-gold)";
-    attemptsMsg.textContent = `Warning: ${remaining} attempt(s) remaining today.`;
+    attemptsMsg.style.display = "block";
+    attemptsMsg.style.color = "#ffd54f";
+    attemptsMsg.style.background = "rgba(255, 213, 79, 0.15)";
+    attemptsMsg.style.border = "1px solid #ffd54f";
+    attemptsMsg.textContent = `⚠️ Warning: ${remaining} attempt(s) remaining today!`;
   } else {
+    attemptsMsg.style.display = "none";
     attemptsMsg.textContent = "";
   }
 
@@ -88,7 +96,6 @@ function registerFailedAttempt() {
   data.attempts = (data.attempts || 0) + 1;
 
   if (data.attempts >= MAX_ATTEMPTS) {
-    // Set lock until 12:00 AM (Midnight next day)
     const tomorrow = new Date();
     tomorrow.setHours(24, 0, 0, 0);
     data.lockedUntil = tomorrow.getTime();
@@ -117,25 +124,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectStudentBtn = document.getElementById("selectStudentRoleBtn");
   const selectTeacherBtn = document.getElementById("selectTeacherRoleBtn");
   const teacherAdminControls = document.getElementById("teacherAdminControls");
+  const leaderboardPanel = document.getElementById("leaderboardPanel");
   const rosterPanel = document.getElementById("rosterPanel");
 
-  // Handle Student Selection
   if (selectStudentBtn) {
     selectStudentBtn.addEventListener("click", () => {
       userRole = "student";
-      if (roleOverlay) {
-        roleOverlay.style.display = "none";
-        roleOverlay.classList.add("hidden");
-      }
-      if (teacherAdminControls) teacherAdminControls.style.display = "none";
-      if (rosterPanel) rosterPanel.style.display = "none";
-      startStudentAbilityCycle();
-    });
-  }
-
-  // Handle Teacher Selection
-  if (selectTeacherBtn) {
-    selectTeacherBtn.addEventListener("click", () => {
       if (roleOverlay) {
         roleOverlay.style.display = "none";
         roleOverlay.classList.add("hidden");
@@ -149,19 +143,40 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Secure Server-Side Passcode Verification
-  async function unlockAdmin() {
+  if (selectTeacherBtn) {
+    selectTeacherBtn.addEventListener("click", () => {
+      userRole = "teacher";
+      if (roleOverlay) {
+        roleOverlay.style.display = "none";
+        roleOverlay.classList.add("hidden");
+      }
+      if (passwordOverlay) {
+        passwordOverlay.style.display = "flex";
+        passwordOverlay.classList.remove("hidden");
+      }
+      checkLockoutStatus();
+      if (passcodeInput && !passcodeInput.disabled) passcodeInput.focus();
+    });
+  }
+
+  async function unlockPortal() {
     if (!passcodeInput) return;
 
-    if (checkLockoutStatus()) {
-      return; // Stop if locked out
-    }
+    if (checkLockoutStatus()) return;
 
     const enteredPasscode = passcodeInput.value.trim();
 
     if (!enteredPasscode) {
       if (lockErrorMessage) {
         lockErrorMessage.textContent = "Please enter a passcode.";
+        lockErrorMessage.style.display = "block";
+      }
+      return;
+    }
+
+    if (!activeTeacher || !activeClass) {
+      if (lockErrorMessage) {
+        lockErrorMessage.textContent = "Please select a teacher and class first!";
         lockErrorMessage.style.display = "block";
       }
       return;
@@ -178,7 +193,9 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({
-          action: "verifyPasscode",
+          action: "verifyClassPasscode",
+          teacherName: activeTeacher,
+          className: activeClass,
           passcode: enteredPasscode
         })
       });
@@ -186,7 +203,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await response.json();
 
       if (result.authorized) {
-        userRole = "teacher";
         resetLockoutOnSuccess();
 
         if (passwordOverlay) {
@@ -195,13 +211,24 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (lockErrorMessage) lockErrorMessage.style.display = "none";
         passcodeInput.value = "";
-        if (teacherAdminControls) teacherAdminControls.style.display = "flex";
-        if (rosterPanel) rosterPanel.style.display = "flex";
-        stopStudentAbilityCycle();
+
+        if (userRole === "teacher") {
+          if (teacherAdminControls) teacherAdminControls.style.display = "flex";
+          if (leaderboardPanel) leaderboardPanel.style.display = "flex";
+          if (rosterPanel) rosterPanel.style.display = "flex";
+          stopStudentAbilityCycle();
+        } else {
+          if (teacherAdminControls) teacherAdminControls.style.display = "none";
+          if (leaderboardPanel) leaderboardPanel.style.display = "none";
+          if (rosterPanel) rosterPanel.style.display = "flex";
+          startStudentAbilityCycle();
+        }
+        
+        loadClassroom(activeClass);
       } else {
         registerFailedAttempt();
         if (lockErrorMessage) {
-          lockErrorMessage.textContent = "Incorrect passcode!";
+          lockErrorMessage.textContent = "Incorrect passcode for this classroom!";
           lockErrorMessage.style.display = "block";
         }
         passcodeInput.value = "";
@@ -222,10 +249,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  if (unlockBtn) unlockBtn.addEventListener("click", unlockAdmin);
+  if (unlockBtn) unlockBtn.addEventListener("click", unlockPortal);
   if (passcodeInput) {
     passcodeInput.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") unlockAdmin();
+      if (e.key === "Enter") unlockPortal();
     });
   }
 
@@ -269,6 +296,93 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// Create Class Event Handler
+document.getElementById("createClassBtn")?.addEventListener("click", async () => {
+  const classInput = document.getElementById("newClassInput");
+  const passcodeInput = document.getElementById("newClassPasscodeInput");
+  
+  const className = classInput ? classInput.value.trim() : "";
+  const classPasscode = passcodeInput ? passcodeInput.value.trim() : "";
+
+  if (!activeTeacher) {
+    alert("Please select or create a teacher first!");
+    return;
+  }
+
+  if (!className) {
+    alert("Please enter a class name!");
+    return;
+  }
+
+  if (!classPasscode) {
+    alert("Please set a class passcode!");
+    return;
+  }
+
+  activeClass = className;
+  if (!classroomData[activeTeacher]) classroomData[activeTeacher] = {};
+  classroomData[activeTeacher][className] = [];
+  
+  if (classInput) classInput.value = "";
+  if (passcodeInput) passcodeInput.value = "";
+  
+  updateClassDropdown();
+
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          action: "createClassroom", 
+          teacherName: activeTeacher, 
+          className: className,
+          classPasscode: classPasscode
+        })
+      });
+      alert(`Class "${className}" created successfully! Passcode saved.`);
+    } catch (e) {
+      console.error("Error creating classroom:", e);
+    }
+  }
+});
+
+function renderStudentRoster(students) {
+  const list = document.getElementById("studentList");
+  if (!list) return;
+  list.innerHTML = "";
+
+  if (students.length === 0) {
+    list.innerHTML = `<div class="empty-msg">No active students</div>`;
+    return;
+  }
+
+  students.forEach(student => {
+    const card = document.createElement("div");
+    card.className = "student-card";
+    
+    const deleteButtonHtml = userRole === "teacher" 
+      ? `<button class="btn danger small" onclick="deleteStudentPermanently('${student.name}')">
+           <i data-lucide="trash-2"></i> Delete
+         </button>` 
+      : "";
+
+    card.innerHTML = `
+      <span><b>${student.name}</b> (${student.totalPoints} pts)</span>
+      <div class="card-actions">
+        <button class="btn primary small" onclick="openStudentReport('${student.name}')">
+          <i data-lucide="file-text"></i> Report
+        </button>
+        ${deleteButtonHtml}
+      </div>
+    `;
+    list.appendChild(card);
+  });
+  
+  initIcons();
+}
+
 // Student Ability Auto-Trigger
 function startStudentAbilityCycle() {
   stopStudentAbilityCycle();
@@ -292,7 +406,6 @@ function stopStudentAbilityCycle() {
   }
 }
 
-// Canvas Engine Setup
 const canvas = document.getElementById("aquariumCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -569,7 +682,6 @@ class Turtle {
       ctx.restore();
     }
 
-    // Flippers & Head
     ctx.fillStyle = style.primary;
     ctx.save();
     ctx.translate(-size * 0.55, -size * 0.25);
@@ -585,7 +697,6 @@ class Turtle {
 
     ctx.beginPath(); ctx.arc(0, -size * 0.75, size * 0.3, 0, Math.PI * 2); ctx.fill();
 
-    // Eyes & Pupils
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.arc(-size * 0.12, -size * 0.85, size * 0.07, 0, Math.PI * 2);
@@ -598,7 +709,6 @@ class Turtle {
     ctx.arc(size * 0.12, -size * 0.87, size * 0.03, 0, Math.PI * 2);
     ctx.fill();
 
-    // Shell
     ctx.fillStyle = style.primary;
     ctx.beginPath(); ctx.ellipse(0, 0, size * 0.65, size * 0.8, 0, 0, Math.PI * 2); ctx.fill();
     ctx.lineWidth = 2.5; ctx.strokeStyle = style.secondary; ctx.stroke();
@@ -628,7 +738,6 @@ class Turtle {
 
     ctx.restore();
 
-    // Student Label
     ctx.save();
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 13px 'Fredoka', sans-serif";
@@ -685,7 +794,6 @@ class Turtle {
   }
 }
 
-// Backend Sync & Hydration
 async function fetchSheetData() {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
     classroomData = {
@@ -862,37 +970,6 @@ function renderLeaderboard(students) {
   });
 }
 
-function renderStudentRoster(students) {
-  const list = document.getElementById("studentList");
-  if (!list) return;
-  list.innerHTML = "";
-
-  if (students.length === 0) {
-    list.innerHTML = `<div class="empty-msg">No active students</div>`;
-    return;
-  }
-
-  students.forEach(student => {
-    const card = document.createElement("div");
-    card.className = "student-card";
-    card.innerHTML = `
-      <span><b>${student.name}</b> (${student.totalPoints} pts)</span>
-      <div class="card-actions">
-        <button class="btn primary small" onclick="openStudentReport('${student.name}')">
-          <i data-lucide="file-text"></i> Report
-        </button>
-        <button class="btn danger small" onclick="deleteStudentPermanently('${student.name}')">
-          <i data-lucide="trash-2"></i> Delete
-        </button>
-      </div>
-    `;
-    list.appendChild(card);
-  });
-  
-  initIcons();
-}
-
-// Permanent Database Delete Function
 window.deleteStudentPermanently = async function(studentName) {
   if (!activeTeacher || !activeClass) return;
 
@@ -927,7 +1004,6 @@ window.deleteStudentPermanently = async function(studentName) {
   }
 };
 
-// Award Points Event (Teacher Mode)
 document.getElementById("submitActivityBtn")?.addEventListener("click", async () => {
   const checkedBoxes = document.querySelectorAll(".student-checkbox:checked");
   const selectedStudents = Array.from(checkedBoxes).map(cb => cb.value);
@@ -1098,31 +1174,6 @@ document.getElementById("createTeacherBtn")?.addEventListener("click", () => {
   activeTeacher = teacherName;
   input.value = "";
   updateTeacherDropdown();
-});
-
-document.getElementById("createClassBtn")?.addEventListener("click", async () => {
-  const input = document.getElementById("newClassInput");
-  const className = input.value.trim();
-  if (!activeTeacher || !className) return;
-
-  activeClass = className;
-  if (!classroomData[activeTeacher]) classroomData[activeTeacher] = {};
-  classroomData[activeTeacher][className] = [];
-  input.value = "";
-  updateClassDropdown();
-
-  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
-    try {
-      await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "createClassroom", teacherName: activeTeacher, className: className })
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  }
 });
 
 document.getElementById("addStudentsBtn")?.addEventListener("click", async () => {
