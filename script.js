@@ -16,7 +16,7 @@ let userRole = "student";
 let isClassUnlocked = false;
 let studentAbilityInterval = null;
 
-// Lockout Constants & Role-Based Storage Key
+// Lockout Constants & Role-Based Storage Keys
 const MAX_ATTEMPTS = 3;
 
 function getLockoutKey() {
@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const leaderboardPanel = document.getElementById("leaderboardPanel");
   const rosterPanel = document.getElementById("rosterPanel");
 
-  // Handle Student Mode Selection
+  // Handle Student Mode Selection (Enters dashboard directly without immediate password prompt)
   if (selectStudentBtn) {
     selectStudentBtn.addEventListener("click", () => {
       userRole = "student";
@@ -142,7 +142,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (rosterPanel) rosterPanel.style.display = "flex";
       
       startStudentAbilityCycle();
-      promptClassUnlock();
     });
   }
 
@@ -169,7 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Unified Verification Action
+  // Verification Handler
   async function verifyPasscodeAction() {
     if (!passcodeInput) return;
     if (checkLockoutStatus()) return;
@@ -193,13 +192,11 @@ document.addEventListener("DOMContentLoaded", () => {
       let payload = {};
 
       if (userRole === "teacher") {
-        // Master Passcode Verification for Admin
         payload = {
           action: "verifyPasscode",
           passcode: enteredPasscode
         };
       } else {
-        // Per-Class Passcode Verification for Students
         payload = {
           action: "verifyClassPasscode",
           teacherName: activeTeacher,
