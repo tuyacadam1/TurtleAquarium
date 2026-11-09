@@ -255,7 +255,7 @@ textarea {
   overflow-y: auto;
 }
 
-.rank-item, .student-card {
+.rank-item {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
@@ -264,6 +264,34 @@ textarea {
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
+}
+
+/* Student Roster Card Layout */
+.student-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  gap: 12px;
+}
+
+.student-card > span {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.student-card .card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .rank-item.top-1 { border-color: #ffd700; background: rgba(255, 215, 0, 0.1); }
@@ -333,5 +361,7 @@ textarea {
     display: block !important;
     position: absolute;
     top: 0; left: 0; width: 100%;
+    color: #000000;
+    background: #ffffff;
   }
 }
