@@ -34,18 +34,18 @@
     </div>
   </div>
 
-  <!-- Security Passcode Overlay (Used for Class Login) -->
+  <!-- Dynamic Verification Overlay (Class Code for Students / Master Code for Teachers) -->
   <div id="passwordLockOverlay" class="overlay-screen" style="display: none;">
     <div class="modal-card lock-card">
-      <h2 id="lockModalTitle"><i data-lucide="lock"></i> Class Verification</h2>
-      <p id="lockModalSubtext">Enter passcode to access this class:</p>
-      <input type="password" id="passcodeInput" placeholder="Enter class passcode..." />
+      <h2 id="lockModalTitle"><i data-lucide="lock"></i> Verification Required</h2>
+      <p id="lockModalSubtext">Enter passcode to continue:</p>
+      <input type="password" id="passcodeInput" placeholder="Enter code..." />
       <div style="display:flex; gap:8px;">
         <button id="cancelLockBtn" class="btn danger" style="flex:1;">Back</button>
         <button id="unlockBtn" class="btn primary" style="flex:2;"><i data-lucide="key-round"></i> Unlock</button>
       </div>
       <p id="lockAttemptsMessage"></p>
-      <p id="lockErrorMessage">Incorrect passcode. Try again!</p>
+      <p id="lockErrorMessage">Incorrect code. Try again!</p>
     </div>
   </div>
 
@@ -94,7 +94,7 @@
           
           <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
             <input type="text" id="newClassInput" placeholder="New Class Name..." />
-            <input type="password" id="newClassPasscodeInput" placeholder="Set Class Passcode / Code..." />
+            <input type="password" id="newClassPasscodeInput" placeholder="Set Class Code for Students..." />
             <button id="createClassBtn" class="btn primary" style="width: 100%;">
               <i data-lucide="plus"></i> Create Class
             </button>
@@ -151,7 +151,7 @@
         </div>
       </div>
 
-      <!-- Student Directory & Reports (Visible to Both Viewports) -->
+      <!-- Student Roster & Individual Reports (Visible to Both Viewports) -->
       <div id="rosterPanel" class="control-box student-feed-panel">
         <h3><i data-lucide="list"></i> Student Roster & Reports</h3>
         <div id="studentList" class="student-list"></div>
