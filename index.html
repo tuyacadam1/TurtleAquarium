@@ -34,16 +34,17 @@
     </div>
   </div>
 
-  <!-- Teacher Security Passcode Overlay -->
+  <!-- Security Passcode Overlay (Used for Class Login) -->
   <div id="passwordLockOverlay" class="overlay-screen" style="display: none;">
     <div class="modal-card lock-card">
-      <h2><i data-lucide="lock"></i> Teacher Verification</h2>
-      <p>Enter passcode for administrative access:</p>
-      <input type="password" id="passcodeInput" placeholder="Enter passcode..." />
+      <h2 id="lockModalTitle"><i data-lucide="lock"></i> Class Verification</h2>
+      <p id="lockModalSubtext">Enter passcode to access this class:</p>
+      <input type="password" id="passcodeInput" placeholder="Enter class passcode..." />
       <div style="display:flex; gap:8px;">
         <button id="cancelLockBtn" class="btn danger" style="flex:1;">Back</button>
         <button id="unlockBtn" class="btn primary" style="flex:2;"><i data-lucide="key-round"></i> Unlock</button>
       </div>
+      <p id="lockAttemptsMessage"></p>
       <p id="lockErrorMessage">Incorrect passcode. Try again!</p>
     </div>
   </div>
@@ -71,7 +72,7 @@
         </button>
       </div>
 
-      <!-- Section Selection (Shown to Both) -->
+      <!-- Section Selection -->
       <div class="control-box">
         <h3><i data-lucide="user-check"></i> Select Teacher & Class</h3>
         <div class="input-group">
@@ -82,7 +83,7 @@
         </div>
       </div>
 
-      <!-- Teacher Controls (Hidden for Students) -->
+      <!-- Teacher Admin Controls (Hidden for Students) -->
       <div id="teacherAdminControls" style="display: flex; flex-direction: column; gap: 14px;">
         <div class="control-box">
           <h3><i data-lucide="plus-circle"></i> Create Teacher / Class</h3>
@@ -90,9 +91,13 @@
             <input type="text" id="newTeacherInput" placeholder="New Teacher Name..." />
             <button id="createTeacherBtn" class="btn primary"><i data-lucide="user-plus"></i> Add</button>
           </div>
-          <div class="input-group">
+          
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
             <input type="text" id="newClassInput" placeholder="New Class Name..." />
-            <button id="createClassBtn" class="btn primary"><i data-lucide="plus"></i> Create</button>
+            <input type="password" id="newClassPasscodeInput" placeholder="Set Class Passcode / Code..." />
+            <button id="createClassBtn" class="btn primary" style="width: 100%;">
+              <i data-lucide="plus"></i> Create Class
+            </button>
           </div>
         </div>
 
@@ -133,8 +138,8 @@
         </div>
       </div>
 
-      <!-- Class Leaderboard (Shown to Both) -->
-      <div class="control-box leaderboard-box">
+      <!-- Class Leaderboard (Teacher View Only) -->
+      <div id="leaderboardPanel" class="control-box leaderboard-box">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h3><i data-lucide="trophy"></i> Class Leaderboard</h3>
           <button id="printClassReportBtn" class="btn sync" style="padding: 4px 8px; font-size: 11px;">
@@ -146,9 +151,9 @@
         </div>
       </div>
 
-      <!-- Student Directory (Teacher Only) -->
+      <!-- Student Directory & Reports (Visible to Both Viewports) -->
       <div id="rosterPanel" class="control-box student-feed-panel">
-        <h3><i data-lucide="list"></i> Active Student Roster</h3>
+        <h3><i data-lucide="list"></i> Student Roster & Reports</h3>
         <div id="studentList" class="student-list"></div>
       </div>
     </aside>
