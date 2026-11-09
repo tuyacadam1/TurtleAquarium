@@ -1355,31 +1355,49 @@ document.getElementById("printSingleReportBtn")?.addEventListener("click", () =>
   printArea.innerHTML = "";
 });
 
+// DYNAMIC CLASS RECORD PRINT REPORT (INDIVIDUAL ACTIVITY SCORES)
 document.getElementById("printClassReportBtn")?.addEventListener("click", () => {
   const students = (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) ? classroomData[activeTeacher][activeClass] : [];
   const printArea = document.getElementById("printableReport");
 
-  let rowsHtml = students.map(s => {
-    let writtenWorksPts = 0;
-    let performanceTaskPts = 0;
-    let examPts = 0;
-
+  // 1. Collect all unique activities assigned across the class
+  const activityList = [];
+  students.forEach(s => {
     if (s.activities) {
       s.activities.forEach(act => {
-        const cat = act.category || "Written Works";
-        if (cat === "Written Works") writtenWorksPts += Number(act.points) || 0;
-        else if (cat === "Performance Task") performanceTaskPts += Number(act.points) || 0;
-        else if (cat === "Exam") examPts += Number(act.points) || 0;
-        else writtenWorksPts += Number(act.points) || 0;
+        if (act.activity && act.activity !== "Initial Registration" && act.activity !== "Enrolled") {
+          if (!activityList.includes(act.activity)) {
+            activityList.push(act.activity);
+          }
+        }
       });
+    }
+  });
+
+  // Fallback header column if no activities exist yet
+  const headersHtml = activityList.length > 0 
+    ? activityList.map(act => `<th style="border: 1px solid #999; padding: 8px; text-align: center; font-size: 12px; background: #e0f7fa;">${act}</th>`).join("")
+    : `<th style="border: 1px solid #999; padding: 8px; text-align: center; font-size: 12px; background: #e0f7fa;">No Activities</th>`;
+
+  // 2. Generate table rows with individual activity scores
+  let rowsHtml = students.map(s => {
+    let activityCells = "";
+
+    if (activityList.length > 0) {
+      activityCells = activityList.map(actName => {
+        const totalForAct = (s.activities || [])
+          .filter(a => a.activity === actName)
+          .reduce((sum, a) => sum + (Number(a.points) || 0), 0);
+        return `<td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center;">${totalForAct || 0}</td>`;
+      }).join("");
+    } else {
+      activityCells = `<td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center;">0</td>`;
     }
 
     return `
       <tr>
         <td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; font-weight: bold;">${s.name}</td>
-        <td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center;">${writtenWorksPts}</td>
-        <td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center;">${performanceTaskPts}</td>
-        <td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center;">${examPts}</td>
+        ${activityCells}
         <td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center; font-weight: bold; background: #f9f9f9;">${s.totalPoints}</td>
       </tr>
     `;
@@ -1396,19 +1414,14 @@ document.getElementById("printClassReportBtn")?.addEventListener("click", () => 
 
       <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
         <thead>
-          <tr style="background: #e0f7fa;">
-            <th rowspan="2" style="border: 1px solid #999; padding: 8px; text-align: left; font-size: 13px;">Student Name</th>
-            <th colspan="3" style="border: 1px solid #999; padding: 8px; text-align: center; font-size: 13px;">Points Breakdown (Classifications)</th>
-            <th rowspan="2" style="border: 1px solid #999; padding: 8px; text-align: center; font-size: 13px;">Total Points</th>
-          </tr>
           <tr style="background: #b2ebf2;">
-            <th style="border: 1px solid #999; padding: 6px; text-align: center; font-size: 12px;">Written Works</th>
-            <th style="border: 1px solid #999; padding: 6px; text-align: center; font-size: 12px;">Performance Task</th>
-            <th style="border: 1px solid #999; padding: 6px; text-align: center; font-size: 12px;">Exam</th>
+            <th style="border: 1px solid #999; padding: 10px; text-align: left; font-size: 13px;">Student Name</th>
+            ${headersHtml}
+            <th style="border: 1px solid #999; padding: 10px; text-align: center; font-size: 13px; background: #80deea;">Total Points</th>
           </tr>
         </thead>
         <tbody>
-          ${rowsHtml || `<tr><td colspan="5" style="text-align:center; padding: 12px;">No student records found.</td></tr>`}
+          ${rowsHtml || `<tr><td colspan="${activityList.length + 2}" style="text-align:center; padding: 12px;">No student records found.</td></tr>`}
         </tbody>
       </table>
     </div>
