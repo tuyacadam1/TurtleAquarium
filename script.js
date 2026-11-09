@@ -4,7 +4,6 @@ function initIcons() {
   }
 }
 
-// Toggle password visibility (Eye Icon)
 window.togglePasswordVisibility = function(inputId, btn) {
   const input = document.getElementById(inputId);
   if (!input) return;
@@ -29,7 +28,6 @@ let userRole = "student";
 let isClassUnlocked = false;
 let studentAbilityInterval = null;
 
-// Lockout Constants & Role-Based Storage Keys
 const MAX_ATTEMPTS = 3;
 
 function getLockoutKey() {
@@ -1151,7 +1149,6 @@ window.deleteStudentPermanently = async function(studentName) {
   }
 };
 
-// AWARD ACTIVITY POINTS EVENT LISTENER (OPTIMIZED SYNC)
 document.getElementById("submitActivityBtn")?.addEventListener("click", async () => {
   const btn = document.getElementById("submitActivityBtn");
   const checkedBoxes = document.querySelectorAll(".student-checkbox:checked");
@@ -1226,7 +1223,6 @@ document.getElementById("submitActivityBtn")?.addEventListener("click", async ()
   initIcons();
 });
 
-// OPEN STUDENT REPORT (MAY DELETE BUTTON PARA SA TEACHERS)
 window.openStudentReport = function(studentName) {
   selectedStudentForReport = studentName;
   const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
@@ -1270,7 +1266,6 @@ window.openStudentReport = function(studentName) {
   initIcons();
 };
 
-// DELETE SINGLE ACTIVITY ENTRY (OPTIMIZED SYNC)
 window.deleteSingleActivityEntry = async function(studentName, activityIndex) {
   if (userRole !== "teacher") return;
 
@@ -1282,29 +1277,22 @@ window.deleteSingleActivityEntry = async function(studentName, activityIndex) {
   const confirmDelete = confirm(`Are you sure you want to delete the entry "${targetActivity.activity}" (+${targetActivity.points} pts)?`);
   if (!confirmDelete) return;
 
-  // 1. Deduct Points locally
   student.totalPoints = Math.max(0, student.totalPoints - targetActivity.points);
-
-  // 2. Remove Activity from Array
   student.activities.splice(activityIndex, 1);
 
-  // 3. Update Turtle Canvas Points
   const turtle = turtles.find(t => t.name === studentName);
   if (turtle) {
     turtle.points = student.totalPoints;
   }
 
-  // 4. Reload UI Dashboard
   const students = classroomData[activeTeacher][activeClass];
   populateStudentCheckboxes(students);
   populateActivityHistory(students);
   renderLeaderboard(students);
   renderStudentRoster(students);
 
-  // Re-render Modal Table
   openStudentReport(studentName);
 
-  // 5. Reliable Backend Sync
   if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
     try {
       await fetch(APPS_SCRIPT_URL, {
@@ -1367,7 +1355,6 @@ document.getElementById("printSingleReportBtn")?.addEventListener("click", () =>
   printArea.innerHTML = "";
 });
 
-// CLASS RECORD FORMATTED PDF PRINT REPORT
 document.getElementById("printClassReportBtn")?.addEventListener("click", () => {
   const students = (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) ? classroomData[activeTeacher][activeClass] : [];
   const printArea = document.getElementById("printableReport");
