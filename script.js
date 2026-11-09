@@ -16,13 +16,16 @@ let userRole = "student";
 let isClassUnlocked = false;
 let studentAbilityInterval = null;
 
-// Lockout Constants
+// Lockout Constants & Role-Based Storage Key
 const MAX_ATTEMPTS = 3;
-const LOCKOUT_KEY = "teacher_lockout_data";
+
+function getLockoutKey() {
+  return userRole === "teacher" ? "teacher_lockout_data" : "student_lockout_data";
+}
 
 function getLockoutData() {
   try {
-    const raw = localStorage.getItem(LOCKOUT_KEY);
+    const raw = localStorage.getItem(getLockoutKey());
     return raw ? JSON.parse(raw) : { attempts: 0, lockedUntil: null };
   } catch (e) {
     return { attempts: 0, lockedUntil: null };
@@ -31,7 +34,7 @@ function getLockoutData() {
 
 function saveLockoutData(data) {
   try {
-    localStorage.setItem(LOCKOUT_KEY, JSON.stringify(data));
+    localStorage.setItem(getLockoutKey(), JSON.stringify(data));
   } catch (e) {
     console.error("Could not save lockout status", e);
   }
@@ -125,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const leaderboardPanel = document.getElementById("leaderboardPanel");
   const rosterPanel = document.getElementById("rosterPanel");
 
-  // Handle Student Mode Selection (Direct entry to class selector)
+  // Handle Student Mode Selection
   if (selectStudentBtn) {
     selectStudentBtn.addEventListener("click", () => {
       userRole = "student";
@@ -143,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Handle Teacher Admin Selection (Requires Admin Master Password)
+  // Handle Teacher Admin Selection (Master Admin Passcode)
   if (selectTeacherBtn) {
     selectTeacherBtn.addEventListener("click", () => {
       userRole = "teacher";
@@ -152,6 +155,9 @@ document.addEventListener("DOMContentLoaded", () => {
         roleOverlay.classList.add("hidden");
       }
       
+      if (lockErrorMessage) lockErrorMessage.style.display = "none";
+      if (passcodeInput) passcodeInput.value = "";
+
       document.getElementById("lockModalTitle").innerHTML = `<i data-lucide="shield-lock"></i> Teacher Verification`;
       document.getElementById("lockModalSubtext").textContent = "Enter Master Admin Passcode:";
       if (passwordOverlay) {
@@ -163,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Verification Function for Modal
+  // Unified Verification Action
   async function verifyPasscodeAction() {
     if (!passcodeInput) return;
     if (checkLockoutStatus()) return;
@@ -184,9 +190,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const payload = userRole === "teacher" 
-        ? { action: "verifyPasscode", passcode: enteredPasscode }
-        : { action: "verifyClassPasscode", teacherName: activeTeacher, className: activeClass, passcode: enteredPasscode };
+      let payload = {};
+
+      if (userRole === "teacher") {
+        // Master Passcode Verification for Admin
+        payload = {
+          action: "verifyPasscode",
+          passcode: enteredPasscode
+        };
+      } else {
+        // Per-Class Passcode Verification for Students
+        payload = {
+          action: "verifyClassPasscode",
+          teacherName: activeTeacher,
+          className: activeClass,
+          passcode: enteredPasscode
+        };
+      }
 
       const response = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
@@ -214,12 +234,18 @@ document.addEventListener("DOMContentLoaded", () => {
           loadClassroom(activeClass);
         } else {
           isClassUnlocked = true;
+          if (teacherAdminControls) teacherAdminControls.style.display = "none";
+          if (leaderboardPanel) leaderboardPanel.style.display = "none";
+          if (rosterPanel) rosterPanel.style.display = "flex";
+          startStudentAbilityCycle();
           loadClassroom(activeClass);
         }
       } else {
         registerFailedAttempt();
         if (lockErrorMessage) {
-          lockErrorMessage.textContent = "Incorrect passcode!";
+          lockErrorMessage.textContent = userRole === "teacher"
+            ? "Incorrect Master Admin Passcode!"
+            : "Incorrect Class Code for this classroom!";
           lockErrorMessage.style.display = "block";
         }
         passcodeInput.value = "";
@@ -290,14 +316,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Prompt Class Code when Student selects a Class
 function promptClassUnlock() {
-  if (userRole !== "student" || !activeTeacher || !activeClass) return;
-  
+  if (userRole !== "student") return;
+
+  const teacherDropdown = document.getElementById("teacherDropdown");
+  const classDropdown = document.getElementById("classDropdown");
+
+  activeTeacher = teacherDropdown ? teacherDropdown.value : "";
+  activeClass = classDropdown ? classDropdown.value : "";
+
+  if (!activeTeacher || !activeClass) return;
+
   const passwordOverlay = document.getElementById("passwordLockOverlay");
   const passcodeInput = document.getElementById("passcodeInput");
+  const lockErrorMessage = document.getElementById("lockErrorMessage");
+
+  if (lockErrorMessage) lockErrorMessage.style.display = "none";
+  if (passcodeInput) passcodeInput.value = "";
 
   document.getElementById("lockModalTitle").innerHTML = `<i data-lucide="lock"></i> Enter Class Code`;
-  document.getElementById("lockModalSubtext").textContent = `Enter class code for ${activeClass}:`;
-  
+  document.getElementById("lockModalSubtext").textContent = `Enter class code for ${activeClass} (${activeTeacher}):`;
+
   if (passwordOverlay) {
     passwordOverlay.style.display = "flex";
     passwordOverlay.classList.remove("hidden");
