@@ -4,6 +4,19 @@ function initIcons() {
   }
 }
 
+// Toggle password visibility (Eye Icon)
+window.togglePasswordVisibility = function(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  
+  const isPassword = input.type === "password";
+  input.type = isPassword ? "text" : "password";
+
+  const iconName = isPassword ? "eye-off" : "eye";
+  btn.innerHTML = `<i data-lucide="${iconName}"></i>`;
+  initIcons();
+};
+
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykX4o72pPfgO7h4EYY3mk0dwssrG_8plN_9uWA0shgMWTro-uLXWyt4bqDkMmICGxEhQ/exec";
 
 let classroomData = {};
@@ -132,7 +145,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const submitInlineBtn = document.getElementById("submitInlineCodeBtn");
   const inlineInput = document.getElementById("inlineClassCodeInput");
 
-  // Handle Student Mode Selection
   if (selectStudentBtn) {
     selectStudentBtn.addEventListener("click", () => {
       userRole = "student";
@@ -151,7 +163,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Handle Teacher Admin Selection (Master Admin Passcode)
   if (selectTeacherBtn) {
     selectTeacherBtn.addEventListener("click", () => {
       userRole = "teacher";
@@ -175,7 +186,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Master Passcode Verification for Teachers
   async function verifyTeacherPasscode() {
     if (!passcodeInput) return;
     if (checkLockoutStatus()) return;
@@ -243,7 +253,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Inline Class Code Verification for Students
   async function verifyInlineClassCode() {
     const errorEl = document.getElementById("inlineClassCodeError");
     if (!inlineInput) return;
@@ -359,7 +368,69 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Create Class Event Handler
+document.getElementById("saveEditDetailsBtn")?.addEventListener("click", async () => {
+  const teacherInput = document.getElementById("editTeacherNameInput");
+  const classInput = document.getElementById("editClassNameInput");
+  const passcodeInput = document.getElementById("editClassPasscodeInput");
+
+  const newTeacherName = teacherInput ? teacherInput.value.trim() : "";
+  const newClassName = classInput ? classInput.value.trim() : "";
+  const newPasscode = passcodeInput ? passcodeInput.value.trim() : "";
+
+  if (!activeTeacher || !activeClass) {
+    alert("Please select a Teacher and Class to edit first!");
+    return;
+  }
+
+  if (!newTeacherName && !newClassName && !newPasscode) {
+    alert("Please enter at least one field to edit.");
+    return;
+  }
+
+  const updatedTeacher = newTeacherName || activeTeacher;
+  const updatedClass = newClassName || activeClass;
+
+  if (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) {
+    const currentStudents = classroomData[activeTeacher][activeClass];
+    
+    if (!classroomData[updatedTeacher]) classroomData[updatedTeacher] = {};
+    classroomData[updatedTeacher][updatedClass] = currentStudents;
+    
+    if (updatedTeacher !== activeTeacher || updatedClass !== activeClass) {
+      delete classroomData[activeTeacher][activeClass];
+    }
+  }
+
+  const oldTeacher = activeTeacher;
+  const oldClass = activeClass;
+
+  activeTeacher = updatedTeacher;
+  activeClass = updatedClass;
+
+  updateTeacherDropdown();
+
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "editClassroomDetails",
+          oldTeacherName: oldTeacher,
+          oldClassName: oldClass,
+          newTeacherName: updatedTeacher,
+          newClassName: updatedClass,
+          newPasscode: newPasscode
+        })
+      });
+      alert("Classroom details updated successfully!");
+    } catch (e) {
+      console.error("Error updating details:", e);
+    }
+  }
+});
+
 document.getElementById("createClassBtn")?.addEventListener("click", async () => {
   const classInput = document.getElementById("newClassInput");
   const passcodeInput = document.getElementById("newClassPasscodeInput");
@@ -861,12 +932,12 @@ async function fetchSheetData() {
     classroomData = {
       "Mr. Smith": { 
         "Science Section A": [
-          { name: "Alex", totalPoints: 1050, activities: [{ activity: "Quiz 1", points: 1050, date: new Date().toLocaleDateString() }] }
+          { name: "Alex", totalPoints: 1050, activities: [{ activity: "Quiz 1", category: "Written Works", points: 1050, date: new Date().toLocaleDateString() }] }
         ]
       },
       "Ms. Davis": { 
         "Math Grade 5": [
-          { name: "Emma", totalPoints: 350, activities: [{ activity: "Homework 1", points: 350, date: new Date().toLocaleDateString() }] }
+          { name: "Emma", totalPoints: 350, activities: [{ activity: "Homework 1", category: "Performance Task", points: 350, date: new Date().toLocaleDateString() }] }
         ]
       }
     };
@@ -930,6 +1001,11 @@ function updateClassDropdown() {
 
   if (!activeClass || !teacherClasses[activeClass]) activeClass = classNames[0];
   dropdown.value = activeClass;
+
+  const editTeacherInput = document.getElementById("editTeacherNameInput");
+  const editClassInput = document.getElementById("editClassNameInput");
+  if (editTeacherInput) editTeacherInput.value = activeTeacher;
+  if (editClassInput) editClassInput.value = activeClass;
 
   if (userRole === "student" && !isClassUnlocked) {
     clearClassroomView();
@@ -1078,10 +1154,12 @@ window.deleteStudentPermanently = async function(studentName) {
   }
 };
 
+// Award Activity Points Event Listener
 document.getElementById("submitActivityBtn")?.addEventListener("click", async () => {
   const checkedBoxes = document.querySelectorAll(".student-checkbox:checked");
   const selectedStudents = Array.from(checkedBoxes).map(cb => cb.value);
   const activityTitle = document.getElementById("activityTitleInput").value.trim() || "Activity Points";
+  const activityCategory = document.getElementById("activityClassificationDropdown").value;
   const points = parseInt(document.getElementById("activityPointsInput").value, 10);
 
   if (!activeTeacher || !activeClass || selectedStudents.length === 0 || isNaN(points)) {
@@ -1098,6 +1176,7 @@ document.getElementById("submitActivityBtn")?.addEventListener("click", async ()
       if (!student.activities) student.activities = [];
       student.activities.push({
         activity: activityTitle,
+        category: activityCategory,
         points: points,
         date: currentDate
       });
@@ -1131,6 +1210,7 @@ document.getElementById("submitActivityBtn")?.addEventListener("click", async ()
           className: activeClass,
           studentsList: selectedStudents,
           activityName: activityTitle,
+          activityCategory: activityCategory,
           points: points
         })
       });
@@ -1140,27 +1220,105 @@ document.getElementById("submitActivityBtn")?.addEventListener("click", async ()
   }
 });
 
+// OPEN STUDENT REPORT (MAY DELETE BUTTON PARA SA TEACHERS)
 window.openStudentReport = function(studentName) {
   selectedStudentForReport = studentName;
   const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
   if (!student) return;
 
   document.getElementById("modalStudentName").textContent = `${student.name}'s Activity Log`;
+  const actionHeader = document.getElementById("modalActionHeader");
+  if (actionHeader) {
+    actionHeader.style.display = userRole === "teacher" ? "table-cell" : "none";
+  }
+
   const tbody = document.getElementById("modalActivityTableBody");
   tbody.innerHTML = "";
 
   if (!student.activities || student.activities.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 12px;">No activity records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${userRole === 'teacher' ? 5 : 4}" style="text-align:center; padding: 12px;">No activity records found.</td></tr>`;
   } else {
-    student.activities.forEach(act => {
+    student.activities.forEach((act, index) => {
       const row = document.createElement("tr");
-      row.innerHTML = `<td style="padding: 8px; border-bottom: 1px solid #103454;">${act.date}</td><td style="padding: 8px; border-bottom: 1px solid #103454;">${act.activity}</td><td style="padding: 8px; border-bottom: 1px solid #103454;"><b>+${act.points}</b></td>`;
+      
+      const deleteCol = userRole === "teacher" 
+        ? `<td style="padding: 8px; border-bottom: 1px solid #103454; text-align: center;">
+            <button class="btn danger small" onclick="deleteSingleActivityEntry('${student.name}', ${index})" title="Delete Entry">
+              <i data-lucide="trash-2"></i>
+            </button>
+           </td>` 
+        : "";
+
+      row.innerHTML = `
+        <td style="padding: 8px; border-bottom: 1px solid #103454;">${act.date}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #103454;">${act.activity}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #103454; color: #80deea;">${act.category || "General"}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #103454;"><b>+${act.points}</b></td>
+        ${deleteCol}
+      `;
       tbody.appendChild(row);
     });
   }
 
   document.getElementById("activityModal").style.display = "flex";
   initIcons();
+};
+
+// DELETE SINGLE ACTIVITY ENTRY (FOR TEACHER ROLE)
+window.deleteSingleActivityEntry = async function(studentName, activityIndex) {
+  if (userRole !== "teacher") return;
+
+  const student = classroomData[activeTeacher][activeClass].find(s => s.name === studentName);
+  if (!student || !student.activities || !student.activities[activityIndex]) return;
+
+  const targetActivity = student.activities[activityIndex];
+
+  const confirmDelete = confirm(`Are you sure you want to delete the entry "${targetActivity.activity}" (+${targetActivity.points} pts)?`);
+  if (!confirmDelete) return;
+
+  // 1. Deduct Points from Student Total
+  student.totalPoints = Math.max(0, student.totalPoints - targetActivity.points);
+
+  // 2. Remove Activity from Array
+  student.activities.splice(activityIndex, 1);
+
+  // 3. Update Turtle Canvas Points
+  const turtle = turtles.find(t => t.name === studentName);
+  if (turtle) {
+    turtle.points = student.totalPoints;
+  }
+
+  // 4. Reload UI Dashboard
+  const students = classroomData[activeTeacher][activeClass];
+  populateStudentCheckboxes(students);
+  populateActivityHistory(students);
+  renderLeaderboard(students);
+  renderStudentRoster(students);
+
+  // Re-render Modal Table
+  openStudentReport(studentName);
+
+  // 5. Sync Deletion with Backend Google Sheets
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "deleteSingleActivityEntry",
+          teacherName: activeTeacher,
+          className: activeClass,
+          studentName: studentName,
+          activityName: targetActivity.activity,
+          points: targetActivity.points,
+          activityDate: targetActivity.date
+        })
+      });
+    } catch (e) {
+      console.error("Backend delete activity error:", e);
+    }
+  }
 };
 
 document.getElementById("printSingleReportBtn")?.addEventListener("click", () => {
@@ -1172,6 +1330,7 @@ document.getElementById("printSingleReportBtn")?.addEventListener("click", () =>
     <tr>
       <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px;">${a.date}</td>
       <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px;">${a.activity}</td>
+      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px;">${a.category || "General"}</td>
       <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; font-weight: bold;">+${a.points}</td>
     </tr>
   `).join("");
@@ -1190,6 +1349,7 @@ document.getElementById("printSingleReportBtn")?.addEventListener("click", () =>
           <tr style="background: #f0f0f0;">
             <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Date</th>
             <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Activity</th>
+            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Category</th>
             <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Points</th>
           </tr>
         </thead>
@@ -1202,35 +1362,62 @@ document.getElementById("printSingleReportBtn")?.addEventListener("click", () =>
   printArea.innerHTML = "";
 });
 
+// CLASS RECORD FORMATTED PDF PRINT REPORT
 document.getElementById("printClassReportBtn")?.addEventListener("click", () => {
   const students = (classroomData[activeTeacher] && classroomData[activeTeacher][activeClass]) ? classroomData[activeTeacher][activeClass] : [];
   const printArea = document.getElementById("printableReport");
 
-  let rowsHtml = students.map(s => `
-    <tr>
-      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; font-weight: bold;">${s.name}</td>
-      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; text-align: center;">${s.totalPoints}</td>
-      <td style="border: 1px solid #ccc; padding: 10px; font-size: 14px; text-align: center;">${s.activities ? s.activities.length : 0} activities</td>
-    </tr>
-  `).join("");
+  let rowsHtml = students.map(s => {
+    let writtenWorksPts = 0;
+    let performanceTaskPts = 0;
+    let examPts = 0;
+
+    if (s.activities) {
+      s.activities.forEach(act => {
+        const cat = act.category || "Written Works";
+        if (cat === "Written Works") writtenWorksPts += Number(act.points) || 0;
+        else if (cat === "Performance Task") performanceTaskPts += Number(act.points) || 0;
+        else if (cat === "Exam") examPts += Number(act.points) || 0;
+        else writtenWorksPts += Number(act.points) || 0;
+      });
+    }
+
+    return `
+      <tr>
+        <td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; font-weight: bold;">${s.name}</td>
+        <td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center;">${writtenWorksPts}</td>
+        <td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center;">${performanceTaskPts}</td>
+        <td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center;">${examPts}</td>
+        <td style="border: 1px solid #999; padding: 8px 10px; font-size: 13px; text-align: center; font-weight: bold; background: #f9f9f9;">${s.totalPoints}</td>
+      </tr>
+    `;
+  }).join("");
 
   printArea.innerHTML = `
-    <div style="font-family: Arial, sans-serif; color: #000; padding: 10px;">
-      <h1 style="font-size: 24px; margin-bottom: 6px;">Classroom Summary Report</h1>
-      <h3 style="font-size: 14px; color: #444; margin-bottom: 20px;">
+    <div style="font-family: Arial, sans-serif; color: #000; padding: 15px;">
+      <h1 style="font-size: 24px; margin-bottom: 4px;">Classroom Record Summary Report</h1>
+      <p style="font-size: 13px; color: #444; margin-bottom: 18px;">
         <b>Teacher:</b> ${activeTeacher} &nbsp;|&nbsp; 
         <b>Class:</b> ${activeClass} &nbsp;|&nbsp; 
-        <b>Date:</b> ${new Date().toLocaleDateString()}
-      </h3>
+        <b>Date Generated:</b> ${new Date().toLocaleDateString()}
+      </p>
+
       <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
         <thead>
-          <tr style="background: #f0f0f0;">
-            <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px;">Student Name</th>
-            <th style="border: 1px solid #ccc; padding: 10px; text-align: center; font-size: 14px;">Total Accumulated Points</th>
-            <th style="border: 1px solid #ccc; padding: 10px; text-align: center; font-size: 14px;">Total Activities Completed</th>
+          <tr style="background: #e0f7fa;">
+            <th rowspan="2" style="border: 1px solid #999; padding: 8px; text-align: left; font-size: 13px;">Student Name</th>
+            <th colspan="3" style="border: 1px solid #999; padding: 8px; text-align: center; font-size: 13px;">Points Breakdown (Classifications)</th>
+            <th rowspan="2" style="border: 1px solid #999; padding: 8px; text-align: center; font-size: 13px;">Total Points</th>
+          </tr>
+          <tr style="background: #b2ebf2;">
+            <th style="border: 1px solid #999; padding: 6px; text-align: center; font-size: 12px;">Written Works</th>
+            <th style="border: 1px solid #999; padding: 6px; text-align: center; font-size: 12px;">Performance Task</th>
+            <th style="border: 1px solid #999; padding: 6px; text-align: center; font-size: 12px;">Exam</th>
           </tr>
         </thead>
-        <tbody>${rowsHtml}</tbody>
+        <tbody>
+          ${rowsHtml || `<tr><td colspan="5" style="text-align:center; padding: 12px;">No student records found.</td></tr>`}
+        </tbody>
       </table>
     </div>
   `;
