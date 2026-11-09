@@ -413,8 +413,7 @@ document.getElementById("saveEditDetailsBtn")?.addEventListener("click", async (
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({
           action: "editClassroomDetails",
           oldTeacherName: oldTeacher,
@@ -466,8 +465,7 @@ document.getElementById("createClassBtn")?.addEventListener("click", async () =>
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({ 
           action: "createClassroom", 
           teacherName: activeTeacher, 
@@ -1139,8 +1137,7 @@ window.deleteStudentPermanently = async function(studentName) {
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({
           action: "deleteStudentPermanently",
           teacherName: activeTeacher,
@@ -1154,8 +1151,9 @@ window.deleteStudentPermanently = async function(studentName) {
   }
 };
 
-// Award Activity Points Event Listener
+// AWARD ACTIVITY POINTS EVENT LISTENER (OPTIMIZED SYNC)
 document.getElementById("submitActivityBtn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("submitActivityBtn");
   const checkedBoxes = document.querySelectorAll(".student-checkbox:checked");
   const selectedStudents = Array.from(checkedBoxes).map(cb => cb.value);
   const activityTitle = document.getElementById("activityTitleInput").value.trim() || "Activity Points";
@@ -1166,6 +1164,10 @@ document.getElementById("submitActivityBtn")?.addEventListener("click", async ()
     alert("Please select a teacher, class, at least one student, and enter valid points!");
     return;
   }
+
+  btn.disabled = true;
+  btn.innerHTML = `<i data-lucide="loader-2"></i> Saving to Sheet...`;
+  initIcons();
 
   const currentDate = new Date().toLocaleDateString();
 
@@ -1202,8 +1204,7 @@ document.getElementById("submitActivityBtn")?.addEventListener("click", async ()
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({
           action: "addBulkActivityPoints",
           teacherName: activeTeacher,
@@ -1216,8 +1217,13 @@ document.getElementById("submitActivityBtn")?.addEventListener("click", async ()
       });
     } catch (e) {
       console.error("Sync error:", e);
+      alert("Warning: Points updated locally but connection to Google Sheet failed.");
     }
   }
+
+  btn.disabled = false;
+  btn.innerHTML = `<i data-lucide="award"></i> Award Points`;
+  initIcons();
 });
 
 // OPEN STUDENT REPORT (MAY DELETE BUTTON PARA SA TEACHERS)
@@ -1264,7 +1270,7 @@ window.openStudentReport = function(studentName) {
   initIcons();
 };
 
-// DELETE SINGLE ACTIVITY ENTRY (FOR TEACHER ROLE)
+// DELETE SINGLE ACTIVITY ENTRY (OPTIMIZED SYNC)
 window.deleteSingleActivityEntry = async function(studentName, activityIndex) {
   if (userRole !== "teacher") return;
 
@@ -1276,7 +1282,7 @@ window.deleteSingleActivityEntry = async function(studentName, activityIndex) {
   const confirmDelete = confirm(`Are you sure you want to delete the entry "${targetActivity.activity}" (+${targetActivity.points} pts)?`);
   if (!confirmDelete) return;
 
-  // 1. Deduct Points from Student Total
+  // 1. Deduct Points locally
   student.totalPoints = Math.max(0, student.totalPoints - targetActivity.points);
 
   // 2. Remove Activity from Array
@@ -1298,13 +1304,12 @@ window.deleteSingleActivityEntry = async function(studentName, activityIndex) {
   // Re-render Modal Table
   openStudentReport(studentName);
 
-  // 5. Sync Deletion with Backend Google Sheets
+  // 5. Reliable Backend Sync
   if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_URL_HERE")) {
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({
           action: "deleteSingleActivityEntry",
           teacherName: activeTeacher,
@@ -1448,8 +1453,7 @@ document.getElementById("addStudentsBtn")?.addEventListener("click", async () =>
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({ action: "addBulkStudents", teacherName: activeTeacher, className: activeClass, students: names })
       });
     } catch (e) {
