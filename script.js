@@ -128,7 +128,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const leaderboardPanel = document.getElementById("leaderboardPanel");
   const rosterPanel = document.getElementById("rosterPanel");
 
-  // Handle Student Mode Selection (Enters dashboard directly without immediate password prompt)
+  const inlineContainer = document.getElementById("inlineClassCodeContainer");
+  const submitInlineBtn = document.getElementById("submitInlineCodeBtn");
+  const inlineInput = document.getElementById("inlineClassCodeInput");
+
+  // Handle Student Mode Selection
   if (selectStudentBtn) {
     selectStudentBtn.addEventListener("click", () => {
       userRole = "student";
@@ -140,8 +144,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (teacherAdminControls) teacherAdminControls.style.display = "none";
       if (leaderboardPanel) leaderboardPanel.style.display = "none";
       if (rosterPanel) rosterPanel.style.display = "flex";
+      if (inlineContainer) inlineContainer.style.display = "flex";
       
       startStudentAbilityCycle();
+      updateClassDropdown();
     });
   }
 
@@ -153,6 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
         roleOverlay.style.display = "none";
         roleOverlay.classList.add("hidden");
       }
+      if (inlineContainer) inlineContainer.style.display = "none";
       
       if (lockErrorMessage) lockErrorMessage.style.display = "none";
       if (passcodeInput) passcodeInput.value = "";
@@ -168,8 +175,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Verification Handler
-  async function verifyPasscodeAction() {
+  // Master Passcode Verification for Teachers
+  async function verifyTeacherPasscode() {
     if (!passcodeInput) return;
     if (checkLockoutStatus()) return;
 
@@ -189,26 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      let payload = {};
-
-      if (userRole === "teacher") {
-        payload = {
-          action: "verifyPasscode",
-          passcode: enteredPasscode
-        };
-      } else {
-        payload = {
-          action: "verifyClassPasscode",
-          teacherName: activeTeacher,
-          className: activeClass,
-          passcode: enteredPasscode
-        };
-      }
-
       const response = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ action: "verifyPasscode", passcode: enteredPasscode })
       });
 
       const result = await response.json();
@@ -223,26 +214,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (lockErrorMessage) lockErrorMessage.style.display = "none";
         passcodeInput.value = "";
 
-        if (userRole === "teacher") {
-          if (teacherAdminControls) teacherAdminControls.style.display = "flex";
-          if (leaderboardPanel) leaderboardPanel.style.display = "flex";
-          if (rosterPanel) rosterPanel.style.display = "flex";
-          stopStudentAbilityCycle();
-          loadClassroom(activeClass);
-        } else {
-          isClassUnlocked = true;
-          if (teacherAdminControls) teacherAdminControls.style.display = "none";
-          if (leaderboardPanel) leaderboardPanel.style.display = "none";
-          if (rosterPanel) rosterPanel.style.display = "flex";
-          startStudentAbilityCycle();
-          loadClassroom(activeClass);
-        }
+        if (teacherAdminControls) teacherAdminControls.style.display = "flex";
+        if (leaderboardPanel) leaderboardPanel.style.display = "flex";
+        if (rosterPanel) rosterPanel.style.display = "flex";
+        stopStudentAbilityCycle();
+        loadClassroom(activeClass);
       } else {
         registerFailedAttempt();
         if (lockErrorMessage) {
-          lockErrorMessage.textContent = userRole === "teacher"
-            ? "Incorrect Master Admin Passcode!"
-            : "Incorrect Class Code for this classroom!";
+          lockErrorMessage.textContent = "Incorrect Master Admin Passcode!";
           lockErrorMessage.style.display = "block";
         }
         passcodeInput.value = "";
@@ -263,10 +243,77 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  if (unlockBtn) unlockBtn.addEventListener("click", verifyPasscodeAction);
+  // Inline Class Code Verification for Students
+  async function verifyInlineClassCode() {
+    const errorEl = document.getElementById("inlineClassCodeError");
+    if (!inlineInput) return;
+
+    const enteredCode = inlineInput.value.trim();
+    if (!enteredCode) {
+      if (errorEl) {
+        errorEl.textContent = "Please enter the class code.";
+        errorEl.style.display = "block";
+      }
+      return;
+    }
+
+    if (!activeTeacher || !activeClass) {
+      if (errorEl) {
+        errorEl.textContent = "Please select a teacher and class first.";
+        errorEl.style.display = "block";
+      }
+      return;
+    }
+
+    if (submitInlineBtn) submitInlineBtn.disabled = true;
+
+    try {
+      const response = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+          action: "verifyClassPasscode",
+          teacherName: activeTeacher,
+          className: activeClass,
+          passcode: enteredCode
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.authorized) {
+        isClassUnlocked = true;
+        if (errorEl) errorEl.style.display = "none";
+        inlineInput.value = "";
+        loadClassroom(activeClass);
+      } else {
+        if (errorEl) {
+          errorEl.textContent = "Incorrect class code!";
+          errorEl.style.display = "block";
+        }
+      }
+    } catch (e) {
+      console.error("Verification error:", e);
+      if (errorEl) {
+        errorEl.textContent = "Server error. Try again!";
+        errorEl.style.display = "block";
+      }
+    } finally {
+      if (submitInlineBtn) submitInlineBtn.disabled = false;
+    }
+  }
+
+  if (unlockBtn) unlockBtn.addEventListener("click", verifyTeacherPasscode);
   if (passcodeInput) {
     passcodeInput.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") verifyPasscodeAction();
+      if (e.key === "Enter") verifyTeacherPasscode();
+    });
+  }
+
+  if (submitInlineBtn) submitInlineBtn.addEventListener("click", verifyInlineClassCode);
+  if (inlineInput) {
+    inlineInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") verifyInlineClassCode();
     });
   }
 
@@ -287,6 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
     switchRoleBtn.addEventListener("click", () => {
       stopStudentAbilityCycle();
       isClassUnlocked = false;
+      if (inlineContainer) inlineContainer.style.display = "none";
       if (roleOverlay) {
         roleOverlay.style.display = "flex";
         roleOverlay.classList.remove("hidden");
@@ -310,36 +358,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".student-checkbox").forEach(cb => cb.checked = false);
   });
 });
-
-// Prompt Class Code when Student selects a Class
-function promptClassUnlock() {
-  if (userRole !== "student") return;
-
-  const teacherDropdown = document.getElementById("teacherDropdown");
-  const classDropdown = document.getElementById("classDropdown");
-
-  activeTeacher = teacherDropdown ? teacherDropdown.value : "";
-  activeClass = classDropdown ? classDropdown.value : "";
-
-  if (!activeTeacher || !activeClass) return;
-
-  const passwordOverlay = document.getElementById("passwordLockOverlay");
-  const passcodeInput = document.getElementById("passcodeInput");
-  const lockErrorMessage = document.getElementById("lockErrorMessage");
-
-  if (lockErrorMessage) lockErrorMessage.style.display = "none";
-  if (passcodeInput) passcodeInput.value = "";
-
-  document.getElementById("lockModalTitle").innerHTML = `<i data-lucide="lock"></i> Enter Class Code`;
-  document.getElementById("lockModalSubtext").textContent = `Enter class code for ${activeClass} (${activeTeacher}):`;
-
-  if (passwordOverlay) {
-    passwordOverlay.style.display = "flex";
-    passwordOverlay.classList.remove("hidden");
-  }
-  checkLockoutStatus();
-  if (passcodeInput && !passcodeInput.disabled) passcodeInput.focus();
-}
 
 // Create Class Event Handler
 document.getElementById("createClassBtn")?.addEventListener("click", async () => {
@@ -914,10 +932,17 @@ function updateClassDropdown() {
   dropdown.value = activeClass;
 
   if (userRole === "student" && !isClassUnlocked) {
-    promptClassUnlock();
+    clearClassroomView();
   } else {
     loadClassroom(activeClass);
   }
+}
+
+function clearClassroomView() {
+  document.getElementById("activeClassTitle").textContent = activeClass ? `Class: ${activeClass} (Locked)` : "No Class Selected";
+  document.getElementById("activeTeacherSubtitle").textContent = `Teacher: ${activeTeacher || "None"}`;
+  turtles = [];
+  renderStudentRoster([]);
 }
 
 function loadClassroom(className) {
@@ -1261,7 +1286,7 @@ document.getElementById("classDropdown")?.addEventListener("change", (e) => {
   activeClass = e.target.value;
   isClassUnlocked = false;
   if (userRole === "student") {
-    promptClassUnlock();
+    clearClassroomView();
   } else {
     loadClassroom(activeClass);
   }
