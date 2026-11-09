@@ -34,12 +34,12 @@
     </div>
   </div>
 
-  <!-- Security Passcode Overlay -->
+  <!-- Master Security Passcode Overlay (Teacher Admin Only) -->
   <div id="passwordLockOverlay" class="overlay-screen" style="display: none;">
     <div class="modal-card lock-card">
-      <h2 id="lockModalTitle"><i data-lucide="lock"></i> Verification Required</h2>
-      <p id="lockModalSubtext">Enter passcode to continue:</p>
-      <input type="password" id="passcodeInput" placeholder="Enter code..." />
+      <h2 id="lockModalTitle"><i data-lucide="shield-lock"></i> Teacher Verification</h2>
+      <p id="lockModalSubtext">Enter Master Admin Passcode:</p>
+      <input type="password" id="passcodeInput" placeholder="Enter Master Admin code..." />
       <div style="display:flex; gap:8px;">
         <button id="cancelLockBtn" class="btn danger" style="flex:1;">Back</button>
         <button id="unlockBtn" class="btn primary" style="flex:2;"><i data-lucide="key-round"></i> Unlock</button>
@@ -80,6 +80,18 @@
         </div>
         <div class="input-group">
           <select id="classDropdown"><option value="">Select a teacher first...</option></select>
+        </div>
+
+        <!-- Inline Class Code Input (For Student View) -->
+        <div id="inlineClassCodeContainer" style="display: none; flex-direction: column; gap: 6px; margin-top: 8px;">
+          <label style="font-size: 11px; color: #80deea;">Enter Class Code to Unlock:</label>
+          <div style="display: flex; gap: 6px;">
+            <input type="password" id="inlineClassCodeInput" placeholder="Class Code..." style="flex: 1;" />
+            <button id="submitInlineCodeBtn" class="btn primary small">
+              <i data-lucide="key-round"></i> Join
+            </button>
+          </div>
+          <p id="inlineClassCodeError" style="display: none; font-size: 11px; color: #ff5252; margin-top: 2px;"></p>
         </div>
       </div>
 
